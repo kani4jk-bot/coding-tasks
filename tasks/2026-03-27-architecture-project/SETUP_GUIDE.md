@@ -48,6 +48,15 @@ pip install -r requirements.txt
 
 This may take several minutes depending on your internet connection.
 
+#### Configure the Backend
+
+```bash
+cp .env.example .env
+# Optional: edit .env
+# BACKEND_MODE=local   # default local pipeline
+# BACKEND_MODE=hosted  # local segmentation + hosted edit path
+```
+
 #### Run the Backend
 
 ```bash
@@ -193,6 +202,9 @@ The frontend will be running on `http://localhost:3000`
 You can customize the backend with environment variables:
 
 ```bash
+# Core backend routing
+export BACKEND_MODE=local
+
 # Set allowed CORS origins (comma-separated)
 export ALLOWED_ORIGINS="http://localhost:3000,http://localhost:5173"
 
@@ -204,7 +216,19 @@ export OUTPUT_CLEANUP_DAYS=7
 
 # Enable debug mode (default: False)
 export FLASK_DEBUG=True
+
+# Frontend -> backend origin override
+export VITE_API_BASE="http://localhost:5001"
+
+# Hosted edit mode placeholders
+export HOSTED_EDIT_PROVIDER=replicate
+export HOSTED_EDIT_API_KEY=your-key-here
+export HOSTED_EDIT_API_URL=https://api.example.com/edit
 ```
+
+### Hosted mode note
+
+The refactor now supports `BACKEND_MODE=hosted`, but the actual provider-specific hosted edit request still needs to be wired up once you choose a vendor and API contract. Until then, hosted mode will return a clear configuration/runtime error instead of silently falling back.
 
 ## Project Structure
 

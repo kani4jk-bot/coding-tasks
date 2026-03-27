@@ -39,8 +39,8 @@ This application allows you to:
 
 ### Backend (`app.py`)
 - **Flask API** running on port 5001
-- **SAM Model**: Facebook's SAM-ViT-Huge for segmentation
-- **Stable Diffusion**: RunwayML's Stable Diffusion Inpainting model
+- **Env-driven backend mode**: `BACKEND_MODE=local|hosted`
+- **Provider modules** for local SAM segmentation, local Stable Diffusion editing, and a hosted edit path
 - **Multi-device Support**: Automatically detects and uses CUDA (NVIDIA GPU), MPS (Apple Silicon), or CPU
 
 ### Frontend (`website.html`)
@@ -99,6 +99,17 @@ npm run dev
 ```
 
 The frontend will start on `http://localhost:3000`
+
+### Backend modes
+
+- `BACKEND_MODE=local` (default): local SAM segmentation + local Stable Diffusion inpainting
+- `BACKEND_MODE=hosted`: local SAM segmentation + hosted edit provider path
+
+Hosted mode preserves the same frontend API contract, but still needs a concrete hosted vendor integration and credentials before `/api/edit` can succeed.
+
+### Frontend API base
+
+Set `VITE_API_BASE` when the frontend should talk to a different backend origin. Leave it empty for same-origin setups.
 
 ## API Endpoints
 
