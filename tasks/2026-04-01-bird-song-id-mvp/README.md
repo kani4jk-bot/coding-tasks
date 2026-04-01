@@ -52,7 +52,7 @@ This is a realistic MVP rather than vaporware:
 
 ### Honest limitations / still scaffolded
 
-- BirdNET is **optional setup**, not guaranteed out of the box on every machine
+- BirdNET now has a verified local runtime path on this host via `tensorflow-cpu==2.16.1`, but it is still a heavier dependency than mock mode
 - First-run BirdNET model loading may be slow/heavy
 - No persistence/history yet
 - No spectrogram preview yet
@@ -68,6 +68,8 @@ Use `CLASSIFIER_PROVIDER=mock` while iterating on UI and API behavior.
 ### Real inference mode
 
 Use `CLASSIFIER_PROVIDER=birdnet` once backend dependencies are installed successfully.
+
+On this machine, the missing runtime turned out to be TensorFlow Lite compatibility; installing `tensorflow-cpu==2.16.1` in the Python 3.12 backend venv made BirdNET initialize successfully.
 
 This mode:
 - writes the upload to a temp file
@@ -97,6 +99,8 @@ CLASSIFIER_PROVIDER=birdnet
 ```
 
 > Note: this repo is verified against **Python 3.12** here. The host default Python 3.14 is still a bad bet for this stack.
+>
+> For the real BirdNET path on this host, `backend/requirements.txt` now includes `tensorflow-cpu==2.16.1`, which satisfied BirdNET's missing TFLite/TensorFlow runtime.
 
 ### 2) Frontend
 
