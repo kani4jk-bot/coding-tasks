@@ -6,7 +6,7 @@ A GitHub-ready MVP scaffold for a **"Shazam but for birds"** app: record or uplo
 
 This is a realistic MVP rather than vaporware:
 
-- **Frontend:** React + Vite mobile-friendly web app
+- **Frontend:** React + Vite mobile-first web app with PWA groundwork
 - **Backend:** FastAPI API for file upload, validation, inference orchestration, and results
 - **Inference provider layer:** lets you start with a mock/dev classifier and then swap in a real model such as **BirdNET-Lite / BirdNET Analyzer / TensorFlow Lite / ONNX** without rewriting the app
 - **Short-audio workflow:** designed for 5–15 second clips recorded in browser or uploaded manually
@@ -36,6 +36,8 @@ This is a realistic MVP rather than vaporware:
 - Browser microphone recording in supported browsers
 - Mock classifier provider for local development
 - Clean interfaces for plugging in a real bird-song model
+- Web app manifest, icon scaffolding, and a basic service worker shell cache
+- Mobile-first UI structure with install/app-like affordances
 
 ### Stubbed but designed for next step
 
@@ -44,6 +46,7 @@ This is a realistic MVP rather than vaporware:
 - Geo/time-aware reranking using checklist data like eBird
 - Spectrogram preview
 - Result explanation / similar-species comparison
+- Offline identification logic beyond static shell caching
 
 ## Recommended real model/provider path
 
@@ -94,6 +97,10 @@ Why:
 │           ├── providers.py
 │           └── mock_birds.py
 └── frontend/
+    ├── public/
+    │   ├── manifest.webmanifest
+    │   ├── sw.js
+    │   └── icons/
     ├── package.json
     ├── tsconfig.json
     ├── vite.config.ts
@@ -138,6 +145,21 @@ npm run dev
 ```
 
 Frontend will run at: `http://localhost:5173`
+
+### 3) Build check
+
+```bash
+cd frontend
+npm run build
+```
+
+## Phone usage notes
+
+- Open the Vite URL on your phone while both devices are on the same network, or deploy the frontend/backend to reachable URLs.
+- If your browser shows an install prompt, install it. Otherwise use the browser's **Add to Home Screen** action.
+- Live recording depends on mobile browser microphone support and permission prompts.
+- If recording is blocked, use your phone's voice memo app and upload the saved clip instead.
+- The current service worker only caches the static app shell. Identification still requires the backend API.
 
 ## Environment
 

@@ -12,3 +12,11 @@ export type IdentifyResponse = {
   alternatives: SpeciesPrediction[]
   advice: string[]
 }
+
+export type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>
+  userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed'
+    platform: string
+  }>
+}

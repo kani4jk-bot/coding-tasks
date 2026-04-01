@@ -11,7 +11,7 @@ function formatConfidence(value: number) {
 export function ResultCard({ result }: ResultCardProps) {
   return (
     <section className="results">
-      <div className="result-hero">
+      <div className="result-hero card">
         <p className="eyebrow">Best match</p>
         <h2>{result.top_match.common_name}</h2>
         <p className="scientific">{result.top_match.scientific_name}</p>
@@ -20,7 +20,7 @@ export function ResultCard({ result }: ResultCardProps) {
       </div>
 
       <div className="result-grid">
-        <div className="panel">
+        <div className="card panel">
           <h3>Alternatives</h3>
           {result.alternatives.length === 0 ? (
             <p>No alternatives returned.</p>
@@ -36,7 +36,7 @@ export function ResultCard({ result }: ResultCardProps) {
           )}
         </div>
 
-        <div className="panel">
+        <div className="card panel">
           <h3>Capture tips</h3>
           <ul>
             {result.advice.map((tip) => (

@@ -47,14 +47,16 @@ export function Recorder({ onRecorded }: RecorderProps) {
   }
 
   return (
-    <div className="record-card">
+    <div className="record-card card action-card">
       <div>
+        <p className="section-label">Option 2</p>
         <h3>Record in browser</h3>
-        <p>Grab a quick sample if your phone browser allows microphone access.</p>
+        <p>Best on modern mobile browsers with microphone access enabled.</p>
       </div>
       <button className={isRecording ? 'danger' : 'primary'} onClick={isRecording ? stopRecording : startRecording}>
         {isRecording ? 'Stop recording' : 'Start recording'}
       </button>
+      <p className="small muted">If your phone blocks recording, use the upload option with a saved voice memo.</p>
       {error ? <p className="error">{error}</p> : null}
     </div>
   )
