@@ -1,0 +1,6 @@
+#!/home/kani/.openclaw/workspace/coding-tasks/tasks/2026-04-01-bird-song-id-mvp/backend/.venv/bin/python3.12
+import sys
+from httpx import main
+if __name__ == '__main__':
+    sys.argv[0] = sys.argv[0].removesuffix('.exe')
+    sys.exit(main())
