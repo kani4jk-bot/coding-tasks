@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { ChangeEvent, useEffect, useMemo, useState } from 'react'
 import { identifyBird } from './api'
 import { Recorder } from './components/Recorder'
 import { ResultCard } from './components/ResultCard'
 import { UploadForm } from './components/UploadForm'
-import type { BeforeInstallPromptEvent, IdentifyResponse } from './types'
+import type { BeforeInstallPromptEvent, IdentifyOptions, IdentifyResponse } from './types'
 
 const phoneTips = [
   'Stand still for 5–15 seconds and point the mic toward the loudest bird.',
@@ -18,6 +18,9 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [installState, setInstallState] = useState<'idle' | 'installing' | 'installed'>('idle')
+  const [latitude, setLatitude] = useState('')
+  const [longitude, setLongitude] = useState('')
+  const [recordedOn, setRecordedOn] = useState('')
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (event: Event) => {
@@ -39,13 +42,19 @@ export default function App() {
     }
   }, [])
 
+  const buildOptions = (): IdentifyOptions => ({
+    latitude: latitude.trim() === '' ? undefined : Number(latitude),
+    longitude: longitude.trim() === '' ? undefined : Number(longitude),
+    recordedOn: recordedOn || undefined,
+  })
+
   const runIdentification = async (file: File) => {
     setSelectedFile(file)
     setLoading(true)
     setError(null)
 
     try {
-      const response = await identifyBird(file)
+      const response = await identifyBird(file, buildOptions())
       setResult(response)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unexpected error')
@@ -70,6 +79,26 @@ export default function App() {
     setInstallState(choice.outcome === 'accepted' ? 'installed' : 'idle')
   }
 
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      setError('Geolocation is not available in this browser.')
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLatitude(position.coords.latitude.toFixed(5))
+        setLongitude(position.coords.longitude.toFixed(5))
+      },
+      (geoError) => setError(geoError.message),
+      { enableHighAccuracy: true, timeout: 10000 },
+    )
+  }
+
+  const handleDateChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setRecordedOn(event.target.value)
+  }
+
   return (
     <main className="app-shell">
       <section className="hero card card-hero">
@@ -84,7 +113,7 @@ export default function App() {
         <div className="hero-actions">
           <div className="pill">📱 Phone-first layout</div>
           <div className="pill">🎙️ Live recording</div>
-          <div className="pill">🪶 Installable web app basics</div>
+          <div className="pill">🪶 BirdNET-ready backend</div>
         </div>
 
         {installPrompt ? (
@@ -105,9 +134,37 @@ export default function App() {
         </div>
         <ol className="step-list">
           <li>Grab a short clean clip.</li>
-          <li>Upload it or record in the browser.</li>
-          <li>Check the top match, alternatives, and tips.</li>
+          <li>Add location/date if you know them.</li>
+          <li>Upload or record, then compare top matches.</li>
         </ol>
+      </section>
+
+      <section className="card context-card">
+        <div>
+          <p className="section-label">Helpful context</p>
+          <h2>Give the model a better shot</h2>
+          <p className="muted">These fields are optional, but they matter a lot for real bird inference.</p>
+        </div>
+
+        <div className="context-grid">
+          <label>
+            <span>Latitude</span>
+            <input value={latitude} onChange={(event) => setLatitude(event.target.value)} placeholder="37.7749" inputMode="decimal" />
+          </label>
+          <label>
+            <span>Longitude</span>
+            <input value={longitude} onChange={(event) => setLongitude(event.target.value)} placeholder="-122.4194" inputMode="decimal" />
+          </label>
+          <label>
+            <span>Recording date</span>
+            <input type="date" value={recordedOn} onChange={handleDateChange} />
+          </label>
+          <div className="context-actions">
+            <button className="secondary" type="button" onClick={handleUseMyLocation}>
+              Use my location
+            </button>
+          </div>
+        </div>
       </section>
 
       <section className="input-grid">
@@ -138,7 +195,7 @@ export default function App() {
       <section className="footer-note card">
         <h3>MVP honesty</h3>
         <p>
-          This scaffold still uses a mock provider for local development. The installability and mobile UX work here is groundwork so the real BirdNET-style model can slot in later without redoing the shell.
+          Mock mode still exists for local scaffolding, but the backend now has a real BirdNET integration path with ffmpeg normalization and optional location/date context.
         </p>
       </section>
     </main>

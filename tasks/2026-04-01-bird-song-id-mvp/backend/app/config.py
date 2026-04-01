@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     cors_origins: List[str] | str = ["http://localhost:5173"]
     classifier_provider: str = "mock"
     max_upload_mb: int = 20
+    birdnet_min_confidence: float = 0.2
+    birdnet_top_n: int = 5
 
     @field_validator("cors_origins", mode="before")
     @classmethod

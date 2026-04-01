@@ -138,7 +138,8 @@ ol {
 }
 
 .workflow-card h2,
-.result-hero h2 {
+.result-hero h2,
+.context-card h2 {
   margin-bottom: 0.35rem;
 }
 
@@ -150,7 +151,8 @@ ol {
 
 .input-grid,
 .result-grid,
-.meta-grid {
+.meta-grid,
+.context-grid {
   display: grid;
   gap: 1rem;
 }
@@ -169,13 +171,25 @@ ol {
   font-weight: 700;
 }
 
-input[type='file'] {
+input[type='file'],
+.context-grid input {
   width: 100%;
   padding: 0.85rem;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.04);
   color: inherit;
   border: 1px dashed rgba(153, 246, 228, 0.22);
+}
+
+.context-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.context-actions {
+  display: flex;
+  align-items: end;
 }
 
 .compact-card strong {
@@ -215,8 +229,13 @@ input[type='file'] {
 
   .input-grid,
   .result-grid,
-  .meta-grid {
+  .meta-grid,
+  .context-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .context-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .card-hero {

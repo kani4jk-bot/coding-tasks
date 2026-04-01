@@ -13,6 +13,12 @@ export type IdentifyResponse = {
   advice: string[]
 }
 
+export type IdentifyOptions = {
+  latitude?: number
+  longitude?: number
+  recordedOn?: string
+}
+
 export type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
   userChoice: Promise<{
