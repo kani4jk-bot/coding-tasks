@@ -70,6 +70,13 @@ export default function App() {
     return `${selectedFile.name} · ${sizeMb} MB`
   }, [selectedFile])
 
+  const statusMessage = useMemo(() => {
+    if (loading) return 'Analyzing bird song…'
+    if (error) return error
+    if (result) return `Ready · top match ${result.top_match.common_name}`
+    return 'Waiting for a recording or upload'
+  }, [error, loading, result])
+
   const handleInstall = async () => {
     if (!installPrompt) return
     setInstallState('installing')
@@ -101,49 +108,84 @@ export default function App() {
 
   return (
     <main className="app-shell">
-      <section className="hero card card-hero">
-        <div>
-          <p className="eyebrow">Birdsong ID MVP</p>
-          <h1>Bird ID that feels at home on your phone</h1>
-          <p className="lede">
-            Record a quick clip outside, or upload an existing one, and get a ranked species guess from the local API.
-          </p>
-        </div>
+      <section className="hero-stack">
+        <section className="hero card card-hero">
+          <div className="hero-topline">
+            <p className="eyebrow">Birdsong ID MVP</p>
+            <div className="hero-badge">Mobile field kit</div>
+          </div>
 
-        <div className="hero-actions">
-          <div className="pill">📱 Phone-first layout</div>
-          <div className="pill">🎙️ Live recording</div>
-          <div className="pill">🪶 BirdNET-ready backend</div>
-        </div>
+          <div>
+            <h1>Find the bird behind the song</h1>
+            <p className="lede">
+              Record a quick clip outside, or upload an existing one, and get a ranked species guess from the local API.
+            </p>
+          </div>
 
-        {installPrompt ? (
-          <button className="secondary" onClick={handleInstall} disabled={installState === 'installing'}>
-            {installState === 'installing' ? 'Opening install prompt…' : 'Install app'}
-          </button>
-        ) : installState === 'installed' ? (
-          <div className="install-note success">App installed. You can launch it from your home screen.</div>
-        ) : (
-          <div className="install-note muted">Tip: use Add to Home Screen in your browser if no install button appears.</div>
-        )}
+          <div className="hero-actions">
+            <div className="pill">📱 Clean phone layout</div>
+            <div className="pill">🎙️ Fast capture</div>
+            <div className="pill">🪶 Ranked matches</div>
+          </div>
+
+          <div className="hero-footer">
+            {installPrompt ? (
+              <button className="secondary" onClick={handleInstall} disabled={installState === 'installing'}>
+                {installState === 'installing' ? 'Opening install prompt…' : 'Install app'}
+              </button>
+            ) : installState === 'installed' ? (
+              <div className="install-note success">App installed. You can launch it from your home screen.</div>
+            ) : (
+              <div className="install-note muted">Tip: use Add to Home Screen in your browser if no install button appears.</div>
+            )}
+          </div>
+        </section>
+
+        <section className="status-strip card">
+          <div>
+            <p className="section-label">Session status</p>
+            <strong>{statusMessage}</strong>
+          </div>
+          <div className="status-pills">
+            <span className={`state-pill ${loading ? 'active' : ''}`}>Listening</span>
+            <span className={`state-pill ${result ? 'success' : ''}`}>Results</span>
+            <span className={`state-pill ${error ? 'error' : ''}`}>Alerts</span>
+          </div>
+        </section>
       </section>
 
       <section className="card workflow-card">
-        <div>
-          <p className="section-label">Quick field flow</p>
-          <h2>Capture, identify, compare</h2>
+        <div className="section-heading">
+          <div>
+            <p className="section-label">Quick field flow</p>
+            <h2>Capture, identify, compare</h2>
+          </div>
+          <span className="section-chip">3 steps</span>
         </div>
-        <ol className="step-list">
-          <li>Grab a short clean clip.</li>
-          <li>Add location/date if you know them.</li>
-          <li>Upload or record, then compare top matches.</li>
+        <ol className="step-list step-cards">
+          <li>
+            <strong>Capture</strong>
+            <span>Grab a short clean clip.</span>
+          </li>
+          <li>
+            <strong>Add context</strong>
+            <span>Location and date help narrow species.</span>
+          </li>
+          <li>
+            <strong>Compare</strong>
+            <span>Review the top match and alternates.</span>
+          </li>
         </ol>
       </section>
 
       <section className="card context-card">
-        <div>
-          <p className="section-label">Helpful context</p>
-          <h2>Give the model a better shot</h2>
-          <p className="muted">These fields are optional, but they matter a lot for real bird inference.</p>
+        <div className="section-heading">
+          <div>
+            <p className="section-label">Helpful context</p>
+            <h2>Give the model a better shot</h2>
+            <p className="muted">Optional, but useful when nearby species sound similar.</p>
+          </div>
+          <span className="section-chip muted-chip">Optional</span>
         </div>
 
         <div className="context-grid">
@@ -173,9 +215,10 @@ export default function App() {
       </section>
 
       <section className="meta-grid">
-        <div className="card compact-card">
+        <div className="card compact-card current-clip-card">
           <p className="section-label">Current clip</p>
           <strong>{selectedLabel}</strong>
+          <p className="small muted">New recordings and uploads automatically replace the previous clip.</p>
         </div>
 
         <div className="card compact-card">
@@ -188,7 +231,7 @@ export default function App() {
         </div>
       </section>
 
-      {loading ? <div className="status">Analyzing bird song…</div> : null}
+      {loading ? <div className="status status-info">Analyzing bird song… This can take a few seconds.</div> : null}
       {error ? <div className="status error">{error}</div> : null}
       {result ? <ResultCard result={result} /> : null}
 
