@@ -1,704 +1,623 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Upload, Wand2, Download, Trash2, Eye, EyeOff, Sparkles, Home, Camera, X, AlertCircle } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  AlertCircle,
+  CheckCircle2,
+  Download,
+  Eye,
+  EyeOff,
+  Home,
+  ImagePlus,
+  Loader2,
+  RefreshCw,
+  Sparkles,
+  Square,
+  Trash2,
+  Upload,
+  Wand2,
+} from 'lucide-react';
 
-// Error Notification Component
-const ErrorNotification = ({ message, onClose }) => {
+const PROCESS_STEPS = [
+  'Preparing image',
+  'Building selection mask',
+  'Sending edit request',
+  'Rendering final result',
+];
+
+const PRESETS = [
+  { label: 'Warm oak floor', value: 'warm white oak flooring with subtle natural grain' },
+  { label: 'Sage walls', value: 'soft sage green painted wall with a matte finish' },
+  { label: 'Stone counters', value: 'light quartz countertop with soft gray veining' },
+  { label: 'Modern sofa', value: 'clean-lined cream sofa with modern styling' },
+  { label: 'Brass accents', value: 'brushed brass hardware and fixtures' },
+  { label: 'Mood lighting', value: 'warm recessed ambient lighting with a premium modern feel' },
+];
+
+const ErrorBanner = ({ message, onClose }) => {
   useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose();
-    }, 5000); // Auto-close after 5 seconds
+    const timer = setTimeout(onClose, 6000);
     return () => clearTimeout(timer);
   }, [onClose]);
 
   return (
-    <div className="fixed top-4 right-4 z-50 animate-slide-in">
-      <div className="bg-red-500/95 backdrop-blur-sm text-white p-4 rounded-xl shadow-2xl border border-red-400/50 max-w-md">
-        <div className="flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-          <div className="flex-1">
-            <p className="font-semibold mb-1">Error</p>
-            <p className="text-sm text-red-50">{message}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-red-100 hover:text-white transition-colors flex-shrink-0"
-          >
-            <X className="w-4 h-4" />
-          </button>
+    <div className="toast-stack">
+      <div className="toast toast-error">
+        <AlertCircle size={18} />
+        <div>
+          <strong>Something went wrong</strong>
+          <p>{message}</p>
         </div>
+        <button type="button" className="ghost-icon-button" onClick={onClose} aria-label="Dismiss error">
+          ×
+        </button>
       </div>
     </div>
   );
 };
 
+const LoadingToast = ({ label }) => (
+  <div className="toast-stack">
+    <div className="toast toast-info">
+      <Loader2 size={18} className="spin" />
+      <div>
+        <strong>Working on it</strong>
+        <p>{label}</p>
+      </div>
+    </div>
+  </div>
+);
+
+const clampPoint = (value, max) => Math.max(0, Math.min(max, value));
+
+const getCanvasPoint = (event, canvas) => {
+  const rect = canvas.getBoundingClientRect();
+  if (!rect.width || !rect.height || !canvas.width || !canvas.height) {
+    return null;
+  }
+
+  const clientX = 'touches' in event ? event.touches[0]?.clientX ?? event.changedTouches[0]?.clientX : event.clientX;
+  const clientY = 'touches' in event ? event.touches[0]?.clientY ?? event.changedTouches[0]?.clientY : event.clientY;
+
+  if (typeof clientX !== 'number' || typeof clientY !== 'number') {
+    return null;
+  }
+
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+
+  return {
+    x: clampPoint((clientX - rect.left) * scaleX, canvas.width),
+    y: clampPoint((clientY - rect.top) * scaleY, canvas.height),
+  };
+};
+
 const HomeVisualizationApp = () => {
+  const canvasRef = useRef(null);
+  const fileInputRef = useRef(null);
+
   const [image, setImage] = useState(null);
   const [editedImage, setEditedImage] = useState(null);
   const [points, setPoints] = useState([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [processingStage, setProcessingStage] = useState('');
-  const [modification, setModification] = useState('');
-  const [showOriginal, setShowOriginal] = useState(false);
+  const [selectionIntent, setSelectionIntent] = useState('foreground');
   const [mode, setMode] = useState('point');
+  const [showOriginal, setShowOriginal] = useState(false);
+  const [modification, setModification] = useState('');
   const [boxStart, setBoxStart] = useState(null);
   const [boxEnd, setBoxEnd] = useState(null);
   const [isDrawingBox, setIsDrawingBox] = useState(false);
-  const [error, setError] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
-  const canvasRef = useRef(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStage, setProcessingStage] = useState('');
+  const [progressValue, setProgressValue] = useState(0);
+  const [error, setError] = useState(null);
 
-  const presets = [
-    { label: 'White Marble Table', value: 'white marble table with subtle gray veining' },
-    { label: 'Dark Wood Floor', value: 'dark walnut hardwood flooring' },
-    { label: 'Sage Green Wall', value: 'sage green painted wall, matte finish' },
-    { label: 'Modern Gray Sofa', value: 'modern gray fabric sofa, contemporary style' },
-    { label: 'Brass Fixtures', value: 'brushed brass metal fixtures' },
-    { label: 'Quartz Countertop', value: 'white quartz countertop with gray veining' },
-  ];
+  const selectionSummary = useMemo(() => ({
+    include: points.filter((point) => point.type === 'foreground').length,
+    exclude: points.filter((point) => point.type === 'background').length,
+  }), [points]);
 
   const drawOverlays = useCallback((ctx) => {
-    // Draw points
-    points.forEach((point) => {
+    points.forEach((point, index) => {
+      const isForeground = point.type === 'foreground';
       ctx.beginPath();
-      ctx.arc(point.x, point.y, 8, 0, 2 * Math.PI);
-      ctx.fillStyle = point.type === 'foreground' ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)';
+      ctx.arc(point.x, point.y, 12, 0, Math.PI * 2);
+      ctx.fillStyle = isForeground ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)';
       ctx.fill();
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+      ctx.lineWidth = 3;
       ctx.stroke();
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+      ctx.font = '600 12px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(index + 1), point.x, point.y + 0.5);
     });
 
-    // Draw box
     if (boxStart && boxEnd) {
-      ctx.strokeStyle = 'rgba(34, 197, 94, 0.8)';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(
-        boxStart.x,
-        boxStart.y,
-        boxEnd.x - boxStart.x,
-        boxEnd.y - boxStart.y
-      );
-      ctx.fillStyle = 'rgba(34, 197, 94, 0.1)';
-      ctx.fillRect(
-        boxStart.x,
-        boxStart.y,
-        boxEnd.x - boxStart.x,
-        boxEnd.y - boxStart.y
-      );
-    } else if (boxStart && !boxEnd && isDrawingBox) {
-      ctx.beginPath();
-      ctx.arc(boxStart.x, boxStart.y, 8, 0, 2 * Math.PI);
-      ctx.fillStyle = 'rgba(34, 197, 94, 0.8)';
-      ctx.fill();
+      const x = Math.min(boxStart.x, boxEnd.x);
+      const y = Math.min(boxStart.y, boxEnd.y);
+      const width = Math.abs(boxEnd.x - boxStart.x);
+      const height = Math.abs(boxEnd.y - boxStart.y);
+
+      ctx.fillStyle = 'rgba(139, 92, 246, 0.18)';
+      ctx.fillRect(x, y, width, height);
+      ctx.strokeStyle = 'rgba(167, 139, 250, 0.95)';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([10, 10]);
+      ctx.strokeRect(x, y, width, height);
+      ctx.setLineDash([]);
     }
-  }, [points, boxStart, boxEnd, isDrawingBox]);
+  }, [boxEnd, boxStart, points]);
 
   const drawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || !image) return;
-    
+
     const ctx = canvas.getContext('2d');
-    const img = new Image();
-    
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      
-      // Determine which image to show
-      const shouldShowEdited = editedImage && !showOriginal;
-      
-      if (shouldShowEdited) {
-        // Draw edited image
-        const editedImg = new Image();
-        editedImg.onload = () => {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(editedImg, 0, 0);
-          // Don't draw overlays on the edited result
-        };
-        editedImg.onerror = () => {
-          console.error('Failed to load edited image');
-          // Fallback to original
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0);
-          drawOverlays(ctx);
-        };
-        editedImg.src = editedImage;
-      } else {
-        // Draw original image with overlays
+    const baseImg = new Image();
+
+    baseImg.onload = () => {
+      canvas.width = baseImg.width;
+      canvas.height = baseImg.height;
+
+      const activeSource = editedImage && !showOriginal ? editedImage : image;
+      const displayImg = new Image();
+      displayImg.onload = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-        drawOverlays(ctx);
-      }
+        ctx.drawImage(displayImg, 0, 0);
+        if (!editedImage || showOriginal) {
+          drawOverlays(ctx);
+        }
+      };
+      displayImg.src = activeSource;
     };
-    
-    img.onerror = () => {
-      console.error('Failed to load image');
-    };
-    
-    img.src = image;
-  }, [image, showOriginal, editedImage, drawOverlays]);
+
+    baseImg.src = image;
+  }, [drawOverlays, editedImage, image, showOriginal]);
 
   useEffect(() => {
-    if (image && canvasRef.current) {
-      // Use requestAnimationFrame for smoother rendering
-      const frameId = requestAnimationFrame(() => {
-        drawCanvas();
-      });
-      return () => cancelAnimationFrame(frameId);
-    }
-  }, [image, drawCanvas]);
+    if (!image) return;
+    const frame = requestAnimationFrame(drawCanvas);
+    return () => cancelAnimationFrame(frame);
+  }, [drawCanvas, image, points, boxStart, boxEnd, isDrawingBox, editedImage, showOriginal]);
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
+  useEffect(() => {
+    document.title = 'Home Visualizer AI';
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setPoints([]);
+    setBoxStart(null);
+    setBoxEnd(null);
+  }, []);
+
+  const resetAll = () => {
+    setImage(null);
+    setEditedImage(null);
+    setModification('');
+    setShowOriginal(false);
+    clearSelection();
+  };
+
+  const handleImageUpload = async (event) => {
+    const file = event.target.files?.[0];
     if (!file) return;
 
     setIsUploading(true);
     setError(null);
 
-    // Validate file size (max 50MB)
-    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+    const MAX_FILE_SIZE = 50 * 1024 * 1024;
     if (file.size > MAX_FILE_SIZE) {
-      setError(`File too large! Maximum size is ${MAX_FILE_SIZE / (1024 * 1024)}MB. Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB.`);
-      e.target.value = '';
+      setError(`File too large. Max size is 50MB, and this file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`);
+      event.target.value = '';
       setIsUploading(false);
       return;
     }
 
-    // Check if it's HEIC format
     const fileType = file.type.toLowerCase();
     const fileName = file.name.toLowerCase();
     const isHEIC = fileName.endsWith('.heic') || fileName.endsWith('.heif') || fileType.includes('heic') || fileType.includes('heif');
-
     if (isHEIC) {
-      setError('HEIC format detected! Please convert your image to JPG or PNG first. You can:\n\n1. On iPhone: Go to Settings > Camera > Formats > Select "Most Compatible"\n2. Use an online converter like cloudconvert.com\n3. Open in Preview/Photos and export as JPG');
-      e.target.value = '';
+      setError('HEIC is not supported yet. Please export the photo as JPG or PNG first.');
+      event.target.value = '';
       setIsUploading(false);
       return;
     }
 
-    // Validate it's an image
     if (!file.type.startsWith('image/')) {
-      setError('Please upload a valid image file (JPG, PNG, WebP, etc.)');
-      e.target.value = '';
+      setError('Please upload a valid image file. JPG, PNG, and WebP work best.');
+      event.target.value = '';
       setIsUploading(false);
       return;
     }
 
-    try {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const img = new Image();
-        img.onload = () => {
-          // Image loaded successfully
-          setImage(event.target.result);
-          setEditedImage(null);
-          setPoints([]);
-          setBoxStart(null);
-          setBoxEnd(null);
-          setIsUploading(false);
-        };
-        img.onerror = () => {
-          setError('Failed to load image. Please try a different file format (JPG or PNG recommended).');
-          e.target.value = '';
-          setIsUploading(false);
-        };
-        img.src = event.target.result;
-      };
-      reader.onerror = () => {
-        setError('Failed to read file. Please try again.');
-        e.target.value = '';
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      const img = new Image();
+      img.onload = () => {
+        setImage(loadEvent.target?.result);
+        setEditedImage(null);
+        setModification('');
+        setShowOriginal(false);
+        clearSelection();
         setIsUploading(false);
       };
-      reader.readAsDataURL(file);
-    } catch (error) {
-      setError('Error loading image: ' + error.message);
-      e.target.value = '';
+      img.onerror = () => {
+        setError('Could not open that image. Try a different file.');
+        setIsUploading(false);
+      };
+      img.src = loadEvent.target?.result;
+    };
+    reader.onerror = () => {
+      setError('Failed to read the selected file.');
       setIsUploading(false);
-    }
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleCanvasMouseDown = (e) => {
-    if (!image || isProcessing) return;
-
+  const handlePointAdd = (event, pointType = selectionIntent) => {
     const canvas = canvasRef.current;
-    if (!canvas || canvas.width === 0 || canvas.height === 0) return;
+    if (!canvas || !image || isProcessing || mode !== 'point') return;
 
-    const rect = canvas.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return;
+    const point = getCanvasPoint(event, canvas);
+    if (!point) return;
 
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const x = Math.max(0, Math.min(canvas.width, (e.clientX - rect.left) * scaleX));
-    const y = Math.max(0, Math.min(canvas.height, (e.clientY - rect.top) * scaleY));
-
-    // Ensure coordinates are valid numbers
-    if (isNaN(x) || isNaN(y) || !isFinite(x) || !isFinite(y)) {
-      console.error('Invalid coordinates calculated:', { x, y, canvas: { width: canvas.width, height: canvas.height }, rect });
-      return;
-    }
-
-    if (mode === 'point') {
-      // For point mode, use click handler
-      return;
-    } else if (mode === 'box') {
-      setIsDrawingBox(true);
-      setBoxStart({ x: Number(x), y: Number(y) });
-      setBoxEnd({ x: Number(x), y: Number(y) }); // Initialize end point
-    }
+    setPoints((current) => [...current, { x: Number(point.x), y: Number(point.y), type: pointType }]);
   };
 
-  const handleCanvasMouseMove = (e) => {
-    if (!image || isProcessing || !isDrawingBox || mode !== 'box') return;
-
+  const beginBoxDraw = (event) => {
+    if (!image || isProcessing || mode !== 'box') return;
     const canvas = canvasRef.current;
-    if (!canvas || canvas.width === 0 || canvas.height === 0) return;
+    if (!canvas) return;
+    const point = getCanvasPoint(event, canvas);
+    if (!point) return;
 
-    const rect = canvas.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return;
-
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const x = Math.max(0, Math.min(canvas.width, (e.clientX - rect.left) * scaleX));
-    const y = Math.max(0, Math.min(canvas.height, (e.clientY - rect.top) * scaleY));
-
-    // Ensure coordinates are valid numbers
-    if (isNaN(x) || isNaN(y) || !isFinite(x) || !isFinite(y)) {
-      return;
-    }
-
-    setBoxEnd({ x: Number(x), y: Number(y) });
+    setIsDrawingBox(true);
+    setBoxStart(point);
+    setBoxEnd(point);
   };
 
-  const handleCanvasMouseUp = () => {
+  const moveBoxDraw = (event) => {
+    if (!isDrawingBox || !image || isProcessing || mode !== 'box') return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const point = getCanvasPoint(event, canvas);
+    if (!point) return;
+    setBoxEnd(point);
+  };
+
+  const endBoxDraw = () => {
     if (isDrawingBox) {
       setIsDrawingBox(false);
     }
   };
 
-  const handleCanvasClick = (e) => {
-    if (!image || isProcessing || mode !== 'point') return;
-
-    const canvas = canvasRef.current;
-    if (!canvas || canvas.width === 0 || canvas.height === 0) return;
-
-    const rect = canvas.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return;
-
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const x = Math.max(0, Math.min(canvas.width, (e.clientX - rect.left) * scaleX));
-    const y = Math.max(0, Math.min(canvas.height, (e.clientY - rect.top) * scaleY));
-
-    // Ensure coordinates are valid numbers
-    if (isNaN(x) || isNaN(y) || !isFinite(x) || !isFinite(y)) {
-      return;
+  const undoLastSelection = () => {
+    if (mode === 'point') {
+      setPoints((current) => current.slice(0, -1));
+    } else {
+      setBoxStart(null);
+      setBoxEnd(null);
     }
-
-    setPoints([...points, { x: Number(x), y: Number(y), type: 'foreground' }]);
   };
 
-  const handleCanvasRightClick = (e) => {
-    e.preventDefault();
-    if (!image || isProcessing || mode !== 'point') return;
-
-    const canvas = canvasRef.current;
-    if (!canvas || canvas.width === 0 || canvas.height === 0) return;
-
-    const rect = canvas.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return;
-
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const x = Math.max(0, Math.min(canvas.width, (e.clientX - rect.left) * scaleX));
-    const y = Math.max(0, Math.min(canvas.height, (e.clientY - rect.top) * scaleY));
-
-    // Ensure coordinates are valid numbers
-    if (isNaN(x) || isNaN(y) || !isFinite(x) || !isFinite(y)) {
-      return;
-    }
-
-    setPoints([...points, { x: Number(x), y: Number(y), type: 'background' }]);
+  const downloadImage = () => {
+    if (!editedImage) return;
+    const link = document.createElement('a');
+    link.href = editedImage;
+    link.download = 'edited-home-visualization.png';
+    link.click();
   };
 
   const processImage = async () => {
     if (!modification.trim()) {
-      setError('Please describe what you want to change!');
+      setError('Describe the change you want before generating.');
       return;
     }
 
     if (mode === 'point' && points.length === 0) {
-      setError('Please click on the object you want to modify!');
+      setError('Add at least one selection point first.');
+      return;
+    }
+
+    if (mode === 'box' && (!boxStart || !boxEnd)) {
+      setError('Draw a box around the area you want to edit.');
       return;
     }
 
     if (mode === 'box') {
-      if (!boxStart || !boxEnd) {
-        setError('Please draw a box around the object you want to modify!');
-        return;
-      }
-      // Validate box coordinates
-      if (typeof boxStart.x !== 'number' || typeof boxStart.y !== 'number' ||
-          typeof boxEnd.x !== 'number' || typeof boxEnd.y !== 'number') {
-        setError('Invalid box coordinates. Please try drawing the box again.');
-        return;
-      }
-      // Check if box has valid dimensions
-      const boxWidth = Math.abs(boxEnd.x - boxStart.x);
-      const boxHeight = Math.abs(boxEnd.y - boxStart.y);
-      if (boxWidth < 10 || boxHeight < 10) {
-        setError('Box is too small. Please draw a larger box (minimum 10x10 pixels).');
+      const width = Math.abs(boxEnd.x - boxStart.x);
+      const height = Math.abs(boxEnd.y - boxStart.y);
+      if (width < 10 || height < 10) {
+        setError('The selection box is too small. Draw a slightly larger area.');
         return;
       }
     }
 
     setIsProcessing(true);
-    setProcessingStage('Creating mask...');
+    setProgressValue(15);
+    setProcessingStage(PROCESS_STEPS[0]);
     setError(null);
 
+    const requestData = {
+      image,
+      mode,
+      modification: modification.trim(),
+      points,
+      box: mode === 'box' ? { start: boxStart, end: boxEnd } : null,
+    };
+
     try {
-      // Prepare request data
-      const requestData = {
-        image: image,
-        mode: mode,
-        modification: modification.trim(),
-        points: points,
-        box: mode === 'box' ? { 
-          start: { x: boxStart.x, y: boxStart.y }, 
-          end: { x: boxEnd.x, y: boxEnd.y } 
-        } : null
-      };
-
-      // Create AbortController for timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minute timeout
-
-      // Call Flask backend
-      setProcessingStage('Sending request to server...');
+      const timeoutId = setTimeout(() => controller.abort(), 300000);
       const apiBase = import.meta.env.VITE_API_BASE || '';
+
+      setProcessingStage(PROCESS_STEPS[1]);
+      setProgressValue(35);
+
+      setProcessingStage(PROCESS_STEPS[2]);
+      setProgressValue(60);
       const response = await fetch(`${apiBase}/api/edit`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestData),
-        signal: controller.signal
+        signal: controller.signal,
       });
 
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        let errorMessage = 'Failed to process image';
+        let errorMessage = `Server error: ${response.status}`;
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorMessage;
-          
-          // Handle rate limiting
-          if (response.status === 429) {
-            errorMessage = 'Rate limit exceeded. Please wait a moment before trying again.';
-          }
-        } catch (e) {
-          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        } catch {
+          errorMessage = `${errorMessage} ${response.statusText}`;
+        }
+        if (response.status === 429) {
+          errorMessage = 'Rate limit hit. Wait a little, then try again.';
         }
         throw new Error(errorMessage);
       }
 
-      setProcessingStage('Generating edited image...');
+      setProcessingStage(PROCESS_STEPS[3]);
+      setProgressValue(85);
       const result = await response.json();
-      
-      if (result.success) {
-        setProcessingStage('Complete!');
-        setEditedImage(result.edited_image);
-        setShowOriginal(false); // Show the result by default
-        console.log('Image processed successfully!');
-        
-        // Clear processing stage after a moment
-        setTimeout(() => setProcessingStage(''), 1000);
-      } else {
-        throw new Error('Processing failed');
+
+      if (!result.success) {
+        throw new Error('The edit request finished without a usable result.');
       }
-    } catch (error) {
-      console.error('Error:', error);
-      let errorMessage = 'Error processing image: ';
-      
-      if (error.name === 'AbortError') {
-        errorMessage = 'Request timed out. The image may be too large or the server is taking too long.';
-      } else if (error.message.includes('Failed to fetch')) {
-        errorMessage = 'Could not connect to the server. Make sure the Flask backend is running on http://localhost:5001';
-      } else if (error.message.includes('Rate limit')) {
-        errorMessage = error.message;
+
+      setEditedImage(result.edited_image);
+      setShowOriginal(false);
+      setProgressValue(100);
+      setProcessingStage('Done');
+      window.setTimeout(() => setProcessingStage(''), 1200);
+    } catch (requestError) {
+      if (requestError.name === 'AbortError') {
+        setError('The request timed out. Try a smaller image or a simpler edit prompt.');
+      } else if (String(requestError.message).includes('Failed to fetch')) {
+        setError('Could not reach the backend. Make sure the Flask API is running on port 5001.');
       } else {
-        errorMessage += error.message;
+        setError(requestError.message);
       }
-      
-      setError(errorMessage);
     } finally {
       setIsProcessing(false);
-      setProcessingStage('');
+      setTimeout(() => setProgressValue(0), 400);
     }
   };
 
-  const clearSelection = () => {
-    setPoints([]);
-    setBoxStart(null);
-    setBoxEnd(null);
-  };
-
-  const downloadImage = () => {
-    if (!editedImage) return;
-    
-    const link = document.createElement('a');
-    link.download = 'edited-home-visualization.png';
-    link.href = editedImage;
-    link.click();
-  };
-
-  const resetAll = () => {
-    setImage(null);
-    setEditedImage(null);
-    setPoints([]);
-    setBoxStart(null);
-    setBoxEnd(null);
-    setModification('');
+  const stepState = (index) => {
+    const currentIndex = PROCESS_STEPS.findIndex((step) => step === processingStage);
+    if (!isProcessing && progressValue === 100) return 'done';
+    if (currentIndex > index) return 'done';
+    if (currentIndex === index) return 'active';
+    return 'todo';
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {error && <ErrorNotification message={error} onClose={() => setError(null)} />}
-      {isUploading && (
-        <div className="fixed top-4 right-4 z-50 bg-blue-500/95 backdrop-blur-sm text-white p-4 rounded-xl shadow-2xl border border-blue-400/50">
-          <div className="flex items-center gap-3">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-            <p className="text-sm">Uploading image...</p>
-          </div>
+    <div className="app-shell">
+      {error && <ErrorBanner message={error} onClose={() => setError(null)} />}
+      {isUploading && <LoadingToast label="Importing your image…" />}
+
+      <header className="topbar">
+        <div className="brand-mark">
+          <Home size={20} />
         </div>
-      )}
-      <div className="bg-black/30 backdrop-blur-sm border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-xl">
-              <Home className="w-6 h-6 text-white" />
-            </div>
+        <div>
+          <p className="eyebrow">Mobile-first editor</p>
+          <h1>Home Visualizer AI</h1>
+        </div>
+      </header>
+
+      <main className="app-layout">
+        <section className="phone-stage card surface-hero">
+          <div className="phone-stage-header">
             <div>
-              <h1 className="text-3xl font-bold text-white">Home Visualizer AI</h1>
-              <p className="text-purple-200 text-sm">Transform your space with AI-powered design</p>
+              <p className="section-kicker">Live preview</p>
+              <h2>{!image ? 'Start with a room photo' : editedImage && !showOriginal ? 'Edited result' : 'Selection canvas'}</h2>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
-              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <Upload className="w-5 h-5" />
-                Upload Image
-              </h2>
-              
-              {!image ? (
-                <label className="block cursor-pointer">
-                  <div className="border-2 border-dashed border-purple-400/50 rounded-xl p-8 text-center hover:border-purple-400 transition-all hover:bg-white/5">
-                    <Camera className="w-12 h-12 mx-auto mb-3 text-purple-400" />
-                    <p className="text-white font-medium mb-1">Click to upload</p>
-                    <p className="text-purple-200 text-sm">or drag and drop your room photo</p>
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                </label>
-              ) : (
-                <button
-                  onClick={resetAll}
-                  className="w-full bg-red-500/20 hover:bg-red-500/30 text-red-200 px-4 py-3 rounded-xl transition-all flex items-center justify-center gap-2 border border-red-500/30"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Reset All
-                </button>
-              )}
-            </div>
-
-            {image && (
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
-                <h2 className="text-xl font-bold text-white mb-4">Selection Mode</h2>
-                <div className="space-y-3">
-                  <button
-                    onClick={() => {
-                      setMode('point');
-                      clearSelection();
-                    }}
-                    className={`w-full px-4 py-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
-                      mode === 'point'
-                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                        : 'bg-white/5 text-purple-200 hover:bg-white/10'
-                    }`}
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    Point Selection
-                  </button>
-                  <button
-                    onClick={() => {
-                      setMode('box');
-                      clearSelection();
-                    }}
-                    className={`w-full px-4 py-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
-                      mode === 'box'
-                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                        : 'bg-white/5 text-purple-200 hover:bg-white/10'
-                    }`}
-                  >
-                    <Camera className="w-4 h-4" />
-                    Box Selection
-                  </button>
-                </div>
-                
-                <div className="mt-4 p-3 bg-black/20 rounded-lg">
-                  <p className="text-purple-200 text-sm">
-                    {mode === 'point' ? (
-                      <>
-                        <span className="text-green-400 font-medium">Left click:</span> Select object<br />
-                        <span className="text-red-400 font-medium">Right click:</span> Exclude area
-                      </>
-                    ) : (
-                      <>Click and drag to draw a box around the object</>
-                    )}
-                  </p>
-                </div>
-                
-                {(points.length > 0 || boxStart) && (
-                  <button
-                    onClick={clearSelection}
-                    className="w-full mt-3 bg-white/5 hover:bg-white/10 text-purple-200 px-4 py-2 rounded-lg transition-all text-sm"
-                  >
-                    Clear Selection
-                  </button>
-                )}
-              </div>
-            )}
-
-            {image && (
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
-                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                  <Wand2 className="w-5 h-5" />
-                  Describe Changes
-                </h2>
-                
-                <textarea
-                  value={modification}
-                  onChange={(e) => setModification(e.target.value)}
-                  placeholder="e.g., white marble table with gold veins"
-                  className="w-full bg-black/30 text-white border border-white/20 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-purple-300/50 mb-3 min-h-[100px]"
-                />
-
-                <div className="mb-4">
-                  <p className="text-purple-200 text-sm mb-2">Quick Presets:</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {presets.map((preset, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setModification(preset.value)}
-                        className="bg-white/5 hover:bg-white/10 text-purple-200 px-3 py-2 rounded-lg text-xs transition-all border border-white/10"
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <button
-                  onClick={processImage}
-                  disabled={isProcessing}
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 text-white px-6 py-4 rounded-xl transition-all flex items-center justify-center gap-2 font-semibold shadow-lg shadow-purple-500/50"
-                >
-                  {isProcessing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      {processingStage || 'Processing...'}
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-5 h-5" />
-                      Generate Visualization
-                    </>
-                  )}
-                </button>
-                
-                {isProcessing && processingStage && (
-                  <div className="mt-3">
-                    <div className="w-full bg-black/30 rounded-full h-2 overflow-hidden">
-                      <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full animate-pulse" style={{ width: '100%' }}></div>
-                    </div>
-                    <p className="text-purple-200 text-xs mt-2 text-center">{processingStage}</p>
-                  </div>
-                )}
-              </div>
-            )}
-
             {editedImage && (
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
-                <button
-                  onClick={downloadImage}
-                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-6 py-4 rounded-xl transition-all flex items-center justify-center gap-2 font-semibold shadow-lg shadow-green-500/50"
-                >
-                  <Download className="w-5 h-5" />
-                  Download Result
-                </button>
-              </div>
+              <button type="button" className="pill-button" onClick={() => setShowOriginal((value) => !value)}>
+                {showOriginal ? <Eye size={16} /> : <EyeOff size={16} />}
+                {showOriginal ? 'Show edit' : 'Show original'}
+              </button>
             )}
           </div>
 
-          <div className="lg:col-span-2">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-white">
-                  {!image ? 'Preview' : editedImage ? 'Result' : 'Select Object'}
-                </h2>
-                {editedImage && (
-                  <button
-                    onClick={() => setShowOriginal(!showOriginal)}
-                    className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-white/20"
-                  >
-                    {showOriginal ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                    {showOriginal ? 'Show Result' : 'Show Original'}
-                  </button>
-                )}
-              </div>
+          <div className="canvas-shell">
+            {!image ? (
+              <button type="button" className="upload-blank-state" onClick={() => fileInputRef.current?.click()}>
+                <div className="upload-icon"><ImagePlus size={26} /></div>
+                <strong>Upload a space photo</strong>
+                <span>JPG, PNG, or WebP up to 50MB</span>
+              </button>
+            ) : (
+              <canvas
+                ref={canvasRef}
+                onClick={(event) => handlePointAdd(event)}
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  handlePointAdd(event, 'background');
+                }}
+                onMouseDown={beginBoxDraw}
+                onMouseMove={moveBoxDraw}
+                onMouseUp={endBoxDraw}
+                onMouseLeave={endBoxDraw}
+                onTouchStart={beginBoxDraw}
+                onTouchMove={moveBoxDraw}
+                onTouchEnd={endBoxDraw}
+                className={`editor-canvas ${mode === 'box' ? 'is-box-mode' : ''}`}
+              />
+            )}
+          </div>
 
-              <div className="bg-black/30 rounded-xl overflow-hidden border border-white/20">
-                {!image ? (
-                  <div className="aspect-video flex items-center justify-center">
-                    <div className="text-center">
-                      <Camera className="w-16 h-16 mx-auto mb-4 text-purple-400/50" />
-                      <p className="text-purple-300/70">Upload an image to get started</p>
-                    </div>
-                  </div>
-                ) : (
-                  <canvas
-                    ref={canvasRef}
-                    onClick={handleCanvasClick}
-                    onMouseDown={handleCanvasMouseDown}
-                    onMouseMove={handleCanvasMouseMove}
-                    onMouseUp={handleCanvasMouseUp}
-                    onMouseLeave={handleCanvasMouseUp}
-                    onContextMenu={handleCanvasRightClick}
-                    className="w-full h-auto cursor-crosshair"
-                  />
-                )}
-              </div>
-
-              {image && !editedImage && (
-                <div className="mt-4 p-4 bg-purple-500/10 rounded-lg border border-purple-500/30">
-                  <p className="text-purple-200 text-sm">
-                    💡 <span className="font-semibold">Tip:</span> Select the object you want to modify, then describe your desired changes above.
-                  </p>
-                </div>
+          <div className="selection-toolbar">
+            <div className="badge-row">
+              <span className="stat-badge">Mode: {mode === 'point' ? 'Point select' : 'Drag box'}</span>
+              {mode === 'point' ? (
+                <>
+                  <span className="stat-badge success">Include: {selectionSummary.include}</span>
+                  <span className="stat-badge danger">Exclude: {selectionSummary.exclude}</span>
+                </>
+              ) : (
+                <span className="stat-badge accent">{boxStart && boxEnd ? 'Box ready' : 'Draw selection box'}</span>
+              )}
+            </div>
+            <div className="action-row compact-row">
+              <button type="button" className="secondary-button" onClick={undoLastSelection} disabled={mode === 'point' ? points.length === 0 : !boxStart}>
+                <RefreshCw size={16} />
+                Undo
+              </button>
+              <button type="button" className="secondary-button" onClick={clearSelection} disabled={points.length === 0 && !boxStart}>
+                <Trash2 size={16} />
+                Clear
+              </button>
+              {editedImage && (
+                <button type="button" className="secondary-button" onClick={downloadImage}>
+                  <Download size={16} />
+                  Save
+                </button>
               )}
             </div>
           </div>
-        </div>
-      </div>
+        </section>
+
+        <aside className="controls-stack">
+          <section className="card">
+            <div className="section-heading">
+              <div>
+                <p className="section-kicker">Step 1</p>
+                <h3>Upload</h3>
+              </div>
+              {image && <span className="mini-status"><CheckCircle2 size={14} /> Image ready</span>}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+              onChange={handleImageUpload}
+              className="hidden-input"
+            />
+            <button type="button" className="primary-button" onClick={() => fileInputRef.current?.click()}>
+              <Upload size={18} />
+              {image ? 'Replace image' : 'Choose image'}
+            </button>
+            {image && (
+              <button type="button" className="ghost-button danger-text" onClick={resetAll}>
+                <Trash2 size={16} />
+                Reset everything
+              </button>
+            )}
+          </section>
+
+          <section className="card">
+            <div className="section-heading">
+              <div>
+                <p className="section-kicker">Step 2</p>
+                <h3>Select area</h3>
+              </div>
+            </div>
+            <div className="segmented-grid">
+              <button type="button" className={`segment ${mode === 'point' ? 'active' : ''}`} onClick={() => { setMode('point'); clearSelection(); }}>
+                <Sparkles size={16} />
+                Point mode
+              </button>
+              <button type="button" className={`segment ${mode === 'box' ? 'active' : ''}`} onClick={() => { setMode('box'); clearSelection(); }}>
+                <Square size={16} />
+                Box mode
+              </button>
+            </div>
+
+            {mode === 'point' && (
+              <>
+                <div className="segmented-grid tone-grid">
+                  <button type="button" className={`segment ${selectionIntent === 'foreground' ? 'active success' : ''}`} onClick={() => setSelectionIntent('foreground')}>
+                    Include area
+                  </button>
+                  <button type="button" className={`segment ${selectionIntent === 'background' ? 'active danger' : ''}`} onClick={() => setSelectionIntent('background')}>
+                    Exclude area
+                  </button>
+                </div>
+                <p className="helper-text">On phones, tap the canvas after choosing Include or Exclude. On desktop, right-click still works for exclude points.</p>
+              </>
+            )}
+
+            {mode === 'box' && (
+              <p className="helper-text">Drag directly on the image to frame the area you want changed.</p>
+            )}
+          </section>
+
+          <section className="card">
+            <div className="section-heading">
+              <div>
+                <p className="section-kicker">Step 3</p>
+                <h3>Describe the change</h3>
+              </div>
+            </div>
+            <textarea
+              value={modification}
+              onChange={(event) => setModification(event.target.value)}
+              className="prompt-input"
+              placeholder="Example: Replace this countertop with honed white quartz and make the backsplash warmer."
+            />
+            <div className="preset-grid">
+              {PRESETS.map((preset) => (
+                <button key={preset.label} type="button" className="preset-chip" onClick={() => setModification(preset.value)}>
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="card sticky-action-card">
+            <div className="section-heading">
+              <div>
+                <p className="section-kicker">Step 4</p>
+                <h3>Generate</h3>
+              </div>
+              <span className="mini-status muted">App-style progress</span>
+            </div>
+            <button type="button" className="primary-button large-button" onClick={processImage} disabled={isProcessing || !image}>
+              {isProcessing ? <Loader2 size={18} className="spin" /> : <Wand2 size={18} />}
+              {isProcessing ? processingStage || 'Generating…' : 'Generate visualization'}
+            </button>
+
+            <div className="progress-shell">
+              <div className="progress-bar">
+                <div className="progress-fill" style={{ width: `${progressValue}%` }} />
+              </div>
+              <div className="progress-steps">
+                {PROCESS_STEPS.map((step, index) => (
+                  <div key={step} className={`progress-step ${stepState(index)}`}>
+                    <span>{index + 1}</span>
+                    <p>{step}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </aside>
+      </main>
     </div>
   );
 };

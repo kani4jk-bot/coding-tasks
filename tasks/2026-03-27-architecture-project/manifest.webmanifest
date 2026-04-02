@@ -1,0 +1,17 @@
+{
+  "name": "Home Visualizer AI",
+  "short_name": "Visualizer",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "description": "Mobile-friendly architecture image editing workspace.",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
