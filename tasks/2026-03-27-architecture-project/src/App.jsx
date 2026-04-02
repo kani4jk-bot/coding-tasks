@@ -2,9 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   AlertCircle,
   CheckCircle2,
+  MoveHorizontal,
   Download,
-  Eye,
-  EyeOff,
   Home,
   ImagePlus,
   Loader2,
@@ -90,6 +89,38 @@ const getCanvasPoint = (event, canvas) => {
   };
 };
 
+const BeforeAfterCompare = ({ beforeImage, afterImage, compareValue, onCompareChange }) => (
+  <div className="before-after-shell">
+    <div className="before-after-stage" style={{ '--compare-position': `${compareValue}%` }}>
+      <img src={beforeImage} alt="Original room" className="compare-image base-image" draggable="false" />
+      <div className="compare-overlay" aria-hidden="true">
+        <img src={afterImage} alt="" className="compare-image" draggable="false" />
+      </div>
+      <div className="compare-divider" aria-hidden="true">
+        <div className="compare-handle">
+          <MoveHorizontal size={18} />
+        </div>
+      </div>
+      <div className="compare-chip compare-chip-left">Before</div>
+      <div className="compare-chip compare-chip-right">After</div>
+      <input
+        type="range"
+        min="0"
+        max="100"
+        step="1"
+        value={compareValue}
+        onChange={(event) => onCompareChange(Number(event.target.value))}
+        className="compare-range"
+        aria-label="Swipe to compare before and after images"
+      />
+    </div>
+    <div className="compare-footer">
+      <span>Drag the slider to compare</span>
+      <strong>{compareValue < 50 ? 'Original focus' : compareValue > 50 ? 'Edited focus' : 'Split view'}</strong>
+    </div>
+  </div>
+);
+
 const HomeVisualizationApp = () => {
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -99,7 +130,7 @@ const HomeVisualizationApp = () => {
   const [points, setPoints] = useState([]);
   const [selectionIntent, setSelectionIntent] = useState('foreground');
   const [mode, setMode] = useState('point');
-  const [showOriginal, setShowOriginal] = useState(false);
+  const [compareValue, setCompareValue] = useState(50);
   const [modification, setModification] = useState('');
   const [boxStart, setBoxStart] = useState(null);
   const [boxEnd, setBoxEnd] = useState(null);
@@ -114,6 +145,32 @@ const HomeVisualizationApp = () => {
     include: points.filter((point) => point.type === 'foreground').length,
     exclude: points.filter((point) => point.type === 'background').length,
   }), [points]);
+
+  const boxMetrics = useMemo(() => {
+    if (!boxStart || !boxEnd) return null;
+    return {
+      width: Math.abs(boxEnd.x - boxStart.x),
+      height: Math.abs(boxEnd.y - boxStart.y),
+    };
+  }, [boxEnd, boxStart]);
+
+  const hasActiveSelection = points.length > 0 || Boolean(boxStart && boxEnd);
+  const resultReady = Boolean(editedImage);
+  const promptLength = modification.trim().length;
+
+  const currentStepNumber = useMemo(() => {
+    if (resultReady) return 4;
+    if (promptLength > 0) return 3;
+    if (hasActiveSelection) return 2;
+    if (image) return 1;
+    return 0;
+  }, [resultReady, promptLength, hasActiveSelection, image]);
+
+  const resultSummaryText = useMemo(() => {
+    if (!resultReady) return '';
+    if (modification.trim()) return modification.trim();
+    return 'Generated design update';
+  }, [modification, resultReady]);
 
   const drawOverlays = useCallback((ctx) => {
     points.forEach((point, index) => {
@@ -159,26 +216,23 @@ const HomeVisualizationApp = () => {
       canvas.width = baseImg.width;
       canvas.height = baseImg.height;
 
-      const activeSource = editedImage && !showOriginal ? editedImage : image;
       const displayImg = new Image();
       displayImg.onload = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(displayImg, 0, 0);
-        if (!editedImage || showOriginal) {
-          drawOverlays(ctx);
-        }
+        drawOverlays(ctx);
       };
-      displayImg.src = activeSource;
+      displayImg.src = image;
     };
 
     baseImg.src = image;
-  }, [drawOverlays, editedImage, image, showOriginal]);
+  }, [drawOverlays, image]);
 
   useEffect(() => {
     if (!image) return;
     const frame = requestAnimationFrame(drawCanvas);
     return () => cancelAnimationFrame(frame);
-  }, [drawCanvas, image, points, boxStart, boxEnd, isDrawingBox, editedImage, showOriginal]);
+  }, [drawCanvas, image, points, boxStart, boxEnd, isDrawingBox]);
 
   useEffect(() => {
     document.title = 'Home Visualizer AI';
@@ -194,7 +248,7 @@ const HomeVisualizationApp = () => {
     setImage(null);
     setEditedImage(null);
     setModification('');
-    setShowOriginal(false);
+    setCompareValue(50);
     clearSelection();
   };
 
@@ -237,7 +291,7 @@ const HomeVisualizationApp = () => {
         setImage(loadEvent.target?.result);
         setEditedImage(null);
         setModification('');
-        setShowOriginal(false);
+        setCompareValue(50);
         clearSelection();
         setIsUploading(false);
       };
@@ -388,7 +442,7 @@ const HomeVisualizationApp = () => {
       }
 
       setEditedImage(result.edited_image);
-      setShowOriginal(false);
+      setCompareValue(50);
       setProgressValue(100);
       setProcessingStage('Done');
       window.setTimeout(() => setProcessingStage(''), 1200);
@@ -434,14 +488,17 @@ const HomeVisualizationApp = () => {
           <div className="phone-stage-header">
             <div>
               <p className="section-kicker">Live preview</p>
-              <h2>{!image ? 'Start with a room photo' : editedImage && !showOriginal ? 'Edited result' : 'Selection canvas'}</h2>
+              <h2>{!image ? 'Start with a room photo' : resultReady ? 'Before / after compare' : 'Selection canvas'}</h2>
             </div>
-            {editedImage && (
-              <button type="button" className="pill-button" onClick={() => setShowOriginal((value) => !value)}>
-                {showOriginal ? <Eye size={16} /> : <EyeOff size={16} />}
-                {showOriginal ? 'Show edit' : 'Show original'}
-              </button>
-            )}
+            {resultReady && <span className="mini-status accent"><MoveHorizontal size={14} /> Swipe compare</span>}
+          </div>
+
+          <div className="compact-stepper">
+            {[1, 2, 3, 4].map((step) => (
+              <div key={step} className={`compact-step ${currentStepNumber >= step ? 'active' : ''} ${currentStepNumber > step ? 'complete' : ''}`}>
+                <span>{step}</span>
+              </div>
+            ))}
           </div>
 
           <div className="canvas-shell">
@@ -451,6 +508,13 @@ const HomeVisualizationApp = () => {
                 <strong>Upload a space photo</strong>
                 <span>JPG, PNG, or WebP up to 50MB</span>
               </button>
+            ) : resultReady ? (
+              <BeforeAfterCompare
+                beforeImage={image}
+                afterImage={editedImage}
+                compareValue={compareValue}
+                onCompareChange={setCompareValue}
+              />
             ) : (
               <canvas
                 ref={canvasRef}
@@ -471,35 +535,46 @@ const HomeVisualizationApp = () => {
             )}
           </div>
 
-          <div className="selection-toolbar">
-            <div className="badge-row">
-              <span className="stat-badge">Mode: {mode === 'point' ? 'Point select' : 'Drag box'}</span>
-              {mode === 'point' ? (
-                <>
-                  <span className="stat-badge success">Include: {selectionSummary.include}</span>
-                  <span className="stat-badge danger">Exclude: {selectionSummary.exclude}</span>
-                </>
-              ) : (
-                <span className="stat-badge accent">{boxStart && boxEnd ? 'Box ready' : 'Draw selection box'}</span>
-              )}
-            </div>
-            <div className="action-row compact-row">
-              <button type="button" className="secondary-button" onClick={undoLastSelection} disabled={mode === 'point' ? points.length === 0 : !boxStart}>
-                <RefreshCw size={16} />
-                Undo
-              </button>
-              <button type="button" className="secondary-button" onClick={clearSelection} disabled={points.length === 0 && !boxStart}>
-                <Trash2 size={16} />
-                Clear
-              </button>
-              {editedImage && (
-                <button type="button" className="secondary-button" onClick={downloadImage}>
+          {resultReady ? (
+            <div className="result-spotlight">
+              <div className="result-spotlight-copy">
+                <p className="section-kicker">Result ready</p>
+                <h3>Updated design concept</h3>
+                <p>{resultSummaryText}</p>
+              </div>
+              <div className="result-spotlight-actions">
+                <span className="stat-badge accent"><MoveHorizontal size={16} /> Drag the divider to inspect details</span>
+                <button type="button" className="primary-button inline-primary" onClick={downloadImage}>
                   <Download size={16} />
-                  Save
+                  Download result
                 </button>
-              )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="selection-toolbar">
+              <div className="badge-row">
+                <span className="stat-badge">Mode: {mode === 'point' ? 'Point select' : 'Drag box'}</span>
+                {mode === 'point' ? (
+                  <>
+                    <span className="stat-badge success">Include: {selectionSummary.include}</span>
+                    <span className="stat-badge danger">Exclude: {selectionSummary.exclude}</span>
+                  </>
+                ) : (
+                  <span className="stat-badge accent">{boxStart && boxEnd ? 'Box ready' : 'Draw selection box'}</span>
+                )}
+              </div>
+              <div className="action-row compact-row">
+                <button type="button" className="secondary-button" onClick={undoLastSelection} disabled={mode === 'point' ? points.length === 0 : !boxStart}>
+                  <RefreshCw size={16} />
+                  Undo
+                </button>
+                <button type="button" className="secondary-button" onClick={clearSelection} disabled={points.length === 0 && !boxStart}>
+                  <Trash2 size={16} />
+                  Clear
+                </button>
+              </div>
+            </div>
+          )}
         </section>
 
         <aside className="controls-stack">
@@ -536,6 +611,7 @@ const HomeVisualizationApp = () => {
                 <p className="section-kicker">Step 2</p>
                 <h3>Select area</h3>
               </div>
+              {hasActiveSelection && <span className="mini-status success"><CheckCircle2 size={14} /> Selection ready</span>}
             </div>
             <div className="segmented-grid">
               <button type="button" className={`segment ${mode === 'point' ? 'active' : ''}`} onClick={() => { setMode('point'); clearSelection(); }}>
@@ -563,7 +639,15 @@ const HomeVisualizationApp = () => {
             )}
 
             {mode === 'box' && (
-              <p className="helper-text">Drag directly on the image to frame the area you want changed.</p>
+              <>
+                <p className="helper-text">Drag directly on the image to frame the area you want changed.</p>
+                {boxMetrics && (
+                  <div className="micro-stats-row">
+                    <span className="stat-badge accent">W: {Math.round(boxMetrics.width)}px</span>
+                    <span className="stat-badge accent">H: {Math.round(boxMetrics.height)}px</span>
+                  </div>
+                )}
+              </>
             )}
           </section>
 
@@ -573,6 +657,7 @@ const HomeVisualizationApp = () => {
                 <p className="section-kicker">Step 3</p>
                 <h3>Describe the change</h3>
               </div>
+              {promptLength > 0 && <span className="mini-status muted">{promptLength} chars</span>}
             </div>
             <textarea
               value={modification}
@@ -589,7 +674,8 @@ const HomeVisualizationApp = () => {
             </div>
           </section>
 
-          <section className="card sticky-action-card">
+          <section className="card sticky-action-card bottom-sheet-card">
+            <div className="bottom-sheet-handle" aria-hidden="true" />
             <div className="section-heading">
               <div>
                 <p className="section-kicker">Step 4</p>
@@ -599,17 +685,17 @@ const HomeVisualizationApp = () => {
             </div>
             <button type="button" className="primary-button large-button" onClick={processImage} disabled={isProcessing || !image}>
               {isProcessing ? <Loader2 size={18} className="spin" /> : <Wand2 size={18} />}
-              {isProcessing ? processingStage || 'Generating…' : 'Generate visualization'}
+              {isProcessing ? processingStage || 'Generating…' : resultReady ? 'Generate another version' : 'Generate visualization'}
             </button>
 
             <div className="progress-shell">
               <div className="progress-bar">
                 <div className="progress-fill" style={{ width: `${progressValue}%` }} />
               </div>
-              <div className="progress-steps">
+              <div className="progress-steps clean-steps">
                 {PROCESS_STEPS.map((step, index) => (
                   <div key={step} className={`progress-step ${stepState(index)}`}>
-                    <span>{index + 1}</span>
+                    <span>{stepState(index) === 'done' ? '✓' : index + 1}</span>
                     <p>{step}</p>
                   </div>
                 ))}
