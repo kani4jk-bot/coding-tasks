@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 
 import { getSavedSighting, removeSighting, saveSightingNotes, toggleStar, upsertSighting } from '../lib/history'
 import type { RootStackParamList } from '../types'
@@ -74,6 +74,7 @@ export function ResultScreen({ route, navigation }: Props) {
   const confidenceBarWidth = useMemo(() => `${confidencePct}%` as const, [confidencePct])
 
   return (
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
       {/* Hero image */}
@@ -192,6 +193,7 @@ export function ResultScreen({ route, navigation }: Props) {
       </Pressable>
 
     </ScrollView>
+    </KeyboardAvoidingView>
   )
 }
 

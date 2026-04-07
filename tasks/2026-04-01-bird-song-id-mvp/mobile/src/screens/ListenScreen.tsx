@@ -248,12 +248,19 @@ export function ListenScreen() {
       {/* Center — record button */}
       <View style={styles.center}>
         <View style={styles.buttonWrap}>
+          {/* Static ambient rings */}
+          <View style={[styles.outerRing, status === 'recording' && styles.outerRingActive]} />
+          <View style={[styles.middleRing, status === 'recording' && styles.middleRingActive]} />
+
+          {/* Animated pulse ring during recording */}
           <Animated.View
             style={[
               styles.pulseRing,
+              status === 'recording' ? styles.pulseRingActive : null,
               { transform: [{ scale: pulseAnim }], opacity: pulseOpacity },
             ]}
           />
+
           <Pressable
             style={[
               styles.recordButton,
@@ -263,6 +270,8 @@ export function ListenScreen() {
             onPress={() => { handlePrimaryPress().catch(() => undefined) }}
             disabled={status === 'uploading'}
           >
+            {/* Inner highlight for glassy depth */}
+            <View style={[styles.buttonHighlight, status !== 'idle' && styles.buttonHighlightDim]} />
             <Text style={styles.recordIcon}>{buttonIcon}</Text>
           </Pressable>
         </View>
@@ -368,12 +377,51 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  outerRing: {
+    position: 'absolute',
+    width: 212,
+    height: 212,
+    borderRadius: 106,
+    backgroundColor: '#1A6B35',
+    opacity: 0.1,
+  },
+  outerRingActive: {
+    backgroundColor: '#8B0000',
+    opacity: 0.12,
+  },
+  middleRing: {
+    position: 'absolute',
+    width: 172,
+    height: 172,
+    borderRadius: 86,
+    backgroundColor: '#255F38',
+    opacity: 0.2,
+  },
+  middleRingActive: {
+    backgroundColor: '#C0392B',
+    opacity: 0.25,
+  },
   pulseRing: {
     position: 'absolute',
     width: 140,
     height: 140,
     borderRadius: 70,
     backgroundColor: '#255F38',
+  },
+  pulseRingActive: {
+    backgroundColor: '#C0392B',
+  },
+  buttonHighlight: {
+    position: 'absolute',
+    top: 16,
+    left: 20,
+    width: 48,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.28)',
+  },
+  buttonHighlightDim: {
+    opacity: 0.12,
   },
   recordButton: {
     width: 140,

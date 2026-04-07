@@ -88,18 +88,28 @@ class IdentificationPipeline:
                 title = query.strip().replace(" ", "_")
                 resp = httpx.get(
                     f"https://en.wikipedia.org/api/rest_v1/page/summary/{title}",
-                    timeout=3.0,
+                    timeout=5.0,
                     headers={"User-Agent": "BirdsongID/1.0 (bird identification app)"},
                     follow_redirects=True,
                 )
                 if resp.status_code == 200:
                     data = resp.json()
                     extract = (data.get("extract") or "").strip()
-                    image_url = (data.get("thumbnail") or {}).get("source")
-                    if extract:
-                        if len(extract) > 420:
-                            extract = extract[:420].rsplit(" ", 1)[0] + "…"
-                        return extract, image_url
+                    if not extract:
+                        continue
+
+                    if len(extract) > 420:
+                        extract = extract[:420].rsplit(" ", 1)[0] + "…"
+
+                    # Prefer full-resolution original; fall back to thumbnail upscaled to 800px
+                    original = (data.get("originalimage") or {}).get("source")
+                    thumbnail = (data.get("thumbnail") or {}).get("source")
+                    if thumbnail and not original:
+                        import re
+                        original = re.sub(r"/\d+px-", "/800px-", thumbnail)
+                    image_url = original or thumbnail
+
+                    return extract, image_url
             except Exception:
                 pass
         return None, None
