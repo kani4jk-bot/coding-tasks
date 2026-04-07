@@ -32,8 +32,10 @@ This is a realistic MVP rather than vaporware:
 ## Current repo contents
 
 - `frontend/` — Vite + React + TypeScript client
-- `backend/` — FastAPI service with provider abstraction
+- `backend/` — FastAPI service with provider abstraction and orchestration pipeline
+- `mobile/` — Expo / React Native native-app shell
 - `docs/architecture.md` — architecture and next steps
+- `docs/production-foundation.md` — backend direction, metadata model, roadmap/checklists
 
 ## What is implemented now
 
@@ -49,6 +51,8 @@ This is a realistic MVP rather than vaporware:
 - BirdNET provider implementation that can run when optional BirdNET dependencies are installed
 - Mobile-first UI structure with install/app-like affordances
 - Web app manifest and basic service worker shell cache
+- Request metadata in API responses (`request_id`, `received_at`, `clip`)
+- Native Expo app shell with listen/results/navigation flow
 
 ### Honest limitations / still scaffolded
 
@@ -121,6 +125,20 @@ cd frontend
 npm run build
 ```
 
+### 4) Native app shell
+
+```bash
+cd mobile
+npm install
+npx expo start
+```
+
+If testing on a physical phone, point the app at your machine's LAN IP:
+
+```bash
+export EXPO_PUBLIC_API_BASE=http://YOUR-LAN-IP:8000
+```
+
 ## Environment
 
 Backend `.env` options:
@@ -152,7 +170,17 @@ Response shape:
 
 ```json
 {
+  "request_id": "birdreq_7df8b2103f19",
+  "received_at": "2026-04-01T12:00:00Z",
   "provider": "birdnet",
+  "clip": {
+    "filename": "birdsong.m4a",
+    "content_type": "audio/mp4",
+    "file_size_bytes": 1823912,
+    "latitude": 37.7749,
+    "longitude": -122.4194,
+    "recorded_on": "2026-04-01"
+  },
   "top_match": {
     "species_code": "haemorhous",
     "common_name": "House Finch",

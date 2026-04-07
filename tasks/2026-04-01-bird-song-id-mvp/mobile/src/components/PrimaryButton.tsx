@@ -1,0 +1,40 @@
+import { Pressable, StyleSheet, Text } from 'react-native'
+
+type PrimaryButtonProps = {
+  title: string
+  onPress: () => void
+  variant?: 'primary' | 'secondary'
+}
+
+export function PrimaryButton({ title, onPress, variant = 'primary' }: PrimaryButtonProps) {
+  return (
+    <Pressable onPress={onPress} style={[styles.button, variant === 'secondary' ? styles.secondary : styles.primary]}>
+      <Text style={[styles.text, variant === 'secondary' ? styles.secondaryText : styles.primaryText]}>{title}</Text>
+    </Pressable>
+  )
+}
+
+const styles = StyleSheet.create({
+  button: {
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+  },
+  primary: {
+    backgroundColor: '#255F38',
+  },
+  secondary: {
+    backgroundColor: '#E8F0E7',
+  },
+  text: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  primaryText: {
+    color: '#FFFFFF',
+  },
+  secondaryText: {
+    color: '#255F38',
+  },
+})

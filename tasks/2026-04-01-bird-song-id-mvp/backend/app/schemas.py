@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 
@@ -17,8 +17,24 @@ class IdentifyContext(BaseModel):
     recorded_on: date | None = None
 
 
-class IdentifyResponse(BaseModel):
+class ClipMetadata(BaseModel):
+    filename: str
+    content_type: str | None = None
+    file_size_bytes: int = Field(ge=0)
+    latitude: float | None = None
+    longitude: float | None = None
+    recorded_on: date | None = None
+
+
+class InferenceSummary(BaseModel):
+    request_id: str
+    received_at: datetime
     provider: str
     top_match: SpeciesPrediction
     alternatives: list[SpeciesPrediction]
     advice: list[str]
+    clip: ClipMetadata
+
+
+class IdentifyResponse(InferenceSummary):
+    pass

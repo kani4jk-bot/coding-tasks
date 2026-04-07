@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "Birdsong ID",
+    "slug": "birdsong-id",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.kani.birdsongid"
+    },
+    "android": {
+      "package": "com.kani.birdsongid"
+    }
+  }
+}

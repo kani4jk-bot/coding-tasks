@@ -63,6 +63,17 @@ The backend isolates inference in provider classes so the product interface stay
 - no app store friction
 - browser media capture is sufficient for a first version
 
+## Native-app expansion path
+
+The repo now also includes a separate `mobile/` Expo shell.
+
+That keeps the current web MVP intact while opening a cleaner path for:
+
+- better recording UX on phones
+- future offline / retry behavior
+- easier permissions management
+- app-store distribution later without rewriting backend contracts
+
 ## Future additions
 
 - spectrogram visualization
