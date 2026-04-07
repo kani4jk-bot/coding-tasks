@@ -14,6 +14,7 @@ SUPPORTED_CONTENT_TYPES = {
     "audio/webm",
     "audio/ogg",
     "audio/mp4",
+    "audio/x-m4a",
     "audio/aac",
 }
 
