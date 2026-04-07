@@ -68,3 +68,10 @@ export type MainTabParamList = {
 }
 
 export type RecordingPermissionState = 'undetermined' | 'granted' | 'denied'
+export type LocationPermissionState = 'undetermined' | 'granted' | 'denied'
+
+export type CaptureContext = {
+  latitude?: number
+  longitude?: number
+  recordedOn?: string
+}

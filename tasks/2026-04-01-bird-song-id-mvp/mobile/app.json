@@ -10,12 +10,13 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.kani.birdsongid",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "Birdsong ID records short clips so it can identify birds from their songs."
+        "NSMicrophoneUsageDescription": "Birdsong ID records short clips so it can identify birds from their songs.",
+        "NSLocationWhenInUseUsageDescription": "Birdsong ID can attach your current location to improve bird identification when you opt in."
       }
     },
     "android": {
       "package": "com.kani.birdsongid",
-      "permissions": ["android.permission.RECORD_AUDIO"]
+      "permissions": ["android.permission.RECORD_AUDIO", "android.permission.ACCESS_COARSE_LOCATION", "android.permission.ACCESS_FINE_LOCATION"]
     }
   }
 }

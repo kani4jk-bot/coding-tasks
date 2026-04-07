@@ -1,4 +1,4 @@
-import type { IdentifyResponse } from '../types'
+import type { CaptureContext, IdentifyResponse } from '../types'
 
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE ?? 'http://localhost:8000'
 
@@ -6,6 +6,7 @@ type NativeClipFile = {
   uri: string
   name: string
   mimeType?: string
+  context?: CaptureContext
 }
 
 type ApiError = {
@@ -24,6 +25,18 @@ export async function identifyBirdClip(file: NativeClipFile): Promise<IdentifyRe
     name: file.name,
     type: file.mimeType ?? 'audio/m4a',
   } as unknown as Blob)
+
+  if (typeof file.context?.latitude === 'number') {
+    formData.append('latitude', String(file.context.latitude))
+  }
+
+  if (typeof file.context?.longitude === 'number') {
+    formData.append('longitude', String(file.context.longitude))
+  }
+
+  if (file.context?.recordedOn) {
+    formData.append('recorded_on', file.context.recordedOn)
+  }
 
   const response = await fetch(`${API_BASE}/api/identify`, {
     method: 'POST',

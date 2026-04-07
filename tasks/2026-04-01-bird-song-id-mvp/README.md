@@ -56,6 +56,7 @@ This is a realistic MVP rather than vaporware:
 - Web app manifest and basic service worker shell cache
 - Request metadata in API responses (`request_id`, `received_at`, `clip`)
 - Native Expo app with real record → upload → result flow
+- Native location opt-in + device-date capture wired into upload context
 - Native local history tab with starred saved sightings
 - Native result screen with confidence band, summary, and metadata sections
 
