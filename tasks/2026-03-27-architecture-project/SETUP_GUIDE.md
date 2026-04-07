@@ -23,6 +23,12 @@ Before you begin, make sure you have:
 
 ### 1. Backend Setup (Flask API)
 
+You now have two backend modes:
+- **local** — full local SAM + Stable Diffusion setup
+- **hosted** — local SAM mask generation + hosted Fal image editing
+
+If you want the fastest setup, use **hosted** mode.
+
 #### Install Python Dependencies
 
 ```bash

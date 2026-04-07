@@ -54,13 +54,29 @@ This application allows you to:
 # 1. Install Python dependencies
 pip install -r requirements.txt
 
-# 2. Run the backend (Terminal 1)
+# 2. Choose backend mode (optional)
+# local = downloads/runs models locally
+# hosted = uses Fal for image editing
+export BACKEND_MODE=local
+
+# 3. Run the backend (Terminal 1)
 python app.py
 
-# 3. Install Node dependencies and run frontend (Terminal 2)
+# 4. Install Node dependencies and run frontend (Terminal 2)
 npm install
 npm run dev
 ```
+
+### Hosted mode (recommended for faster setup)
+
+```bash
+export BACKEND_MODE=hosted
+export HOSTED_EDIT_PROVIDER=fal
+export FAL_KEY=your_fal_key_here
+python app.py
+```
+
+In hosted mode, the backend keeps the same API but sends the edit/inpainting step to Fal instead of loading the local diffusion model.
 
 Then open `http://localhost:3000` in your browser!
 
