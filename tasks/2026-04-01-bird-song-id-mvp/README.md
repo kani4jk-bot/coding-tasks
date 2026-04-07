@@ -16,18 +16,21 @@ This is a realistic MVP rather than vaporware:
 - Added an initial **real BirdNET backend integration path** using `birdnetlib`
 - Added **ffmpeg-based normalization** to mono 48 kHz WAV before BirdNET analysis
 - Added optional **latitude, longitude, and recording date** form fields end-to-end
+- Added richer **bird metadata groundwork** to the API response for species details in the app
+- Added structured **summary/flags fields** so clients can present results more cleanly
+- Added structured backend **error envelopes** for failed mobile/web requests
+- Added native-app **local history + saved sightings** using on-device storage
 - Kept **mock mode** as a runnable fallback so the project still works without heavy ML setup
-- Improved backend/provider boundaries so a real model can fail honestly instead of silently pretending
 
 ## MVP user flow
 
 1. User opens the web app on phone or desktop
 2. Records audio or uploads an existing clip
 3. Optionally adds location/date context
-4. Frontend POSTs the clip to `/api/identify`
+4. Frontend/mobile POSTs the clip to `/api/identify`
 5. Backend normalizes/validates the audio, invokes the configured provider
-6. API returns top candidate species with scores and basic suggestions
-7. UI shows best match, alternatives, and confidence
+6. API returns top candidate species with scores, summary fields, metadata, and suggestions
+7. UI shows best match, alternatives, confidence, and saved history
 
 ## Current repo contents
 
@@ -52,16 +55,18 @@ This is a realistic MVP rather than vaporware:
 - Mobile-first UI structure with install/app-like affordances
 - Web app manifest and basic service worker shell cache
 - Request metadata in API responses (`request_id`, `received_at`, `clip`)
-- Native Expo app shell with listen/results/navigation flow
+- Native Expo app with real record → upload → result flow
+- Native local history tab with starred saved sightings
+- Native result screen with confidence band, summary, and metadata sections
 
 ### Honest limitations / still scaffolded
 
 - BirdNET now has a verified local runtime path on this host via `tensorflow-cpu==2.16.1`, but it is still a heavier dependency than mock mode
 - First-run BirdNET model loading may be slow/heavy
-- No persistence/history yet
+- Native history is **local only** for now; there is no backend account sync yet
+- Species metadata is currently **groundwork**: rich for mock/demo species, sparse for raw BirdNET detections
 - No spectrogram preview yet
-- No eBird-style reranking beyond what BirdNET already does with date/location
-- No offline on-device identification in the browser
+- No offline on-device identification in the browser or native app
 
 ## Recommended provider mode
 
@@ -118,14 +123,7 @@ npm run dev
 
 Frontend will run at: `http://localhost:5173`
 
-### 3) Build check
-
-```bash
-cd frontend
-npm run build
-```
-
-### 4) Native app shell
+### 3) Native app shell
 
 ```bash
 cd mobile
@@ -137,6 +135,16 @@ If testing on a physical phone, point the app at your machine's LAN IP:
 
 ```bash
 export EXPO_PUBLIC_API_BASE=http://YOUR-LAN-IP:8000
+```
+
+### 4) Build checks
+
+```bash
+cd frontend
+npm run build
+
+cd ../mobile
+npx tsc --noEmit
 ```
 
 ## Environment
@@ -166,13 +174,26 @@ Optional form fields:
 - `longitude`
 - `recorded_on` (ISO date, for example `2026-04-01`)
 
-Response shape:
+Success response shape:
 
 ```json
 {
   "request_id": "birdreq_7df8b2103f19",
   "received_at": "2026-04-01T12:00:00Z",
   "provider": "birdnet",
+  "summary": {
+    "headline": "House Finch",
+    "confidence_band": "medium",
+    "short_description": "Good lead, but a few similar birds are still in play.",
+    "likely_species_count": 3,
+    "needs_more_context": false
+  },
+  "flags": {
+    "used_location_context": true,
+    "used_date_context": true,
+    "has_alternatives": true,
+    "review_recommended": true
+  },
   "clip": {
     "filename": "birdsong.m4a",
     "content_type": "audio/mp4",
@@ -186,12 +207,25 @@ Response shape:
     "common_name": "House Finch",
     "scientific_name": "Haemorhous mexicanus",
     "confidence": 0.57,
-    "reason": "BirdNET detected this species in 2 time window(s); strongest hit around 9.0–12.0s."
+    "reason": "BirdNET detected this species in 2 time window(s); strongest hit around 9.0–12.0s.",
+    "metadata": null
   },
   "alternatives": [],
   "advice": [
     "Try a 5–15 second recording with minimal wind noise."
   ]
+}
+```
+
+Error response shape:
+
+```json
+{
+  "request_id": "birdreq_abcd1234",
+  "error": {
+    "code": "bad_audio_request",
+    "message": "Audio payload is empty."
+  }
 }
 ```
 

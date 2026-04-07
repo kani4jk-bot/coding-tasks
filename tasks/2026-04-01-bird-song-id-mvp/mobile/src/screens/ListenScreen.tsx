@@ -6,6 +6,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native'
 
 import { PrimaryButton } from '../components/PrimaryButton'
 import { SectionCard } from '../components/SectionCard'
+import { upsertSighting } from '../lib/history'
 import { identifyBirdClip } from '../lib/api'
 import type { RecordingPermissionState, RootStackParamList } from '../types'
 
@@ -102,6 +103,7 @@ export function ListenScreen() {
         mimeType: 'audio/m4a',
       })
 
+      await upsertSighting(result)
       setStatus('idle')
       setStatusMessage(`Top match ready: ${result.top_match.common_name}`)
       navigation.navigate('Result', { result })
@@ -132,7 +134,7 @@ export function ListenScreen() {
     <ScrollView contentContainerStyle={styles.content}>
       <SectionCard eyebrow="Field capture" title="Listen for the loudest bird">
         <Text style={styles.lede}>
-          This mobile flow now records a real clip, uploads it to the FastAPI backend, and jumps straight to the live result.
+          Record a real clip, send it to the API, and save the result into your local field history automatically.
         </Text>
         <View style={styles.statusRow}>
           <View style={[styles.pill, permissionState === 'granted' && styles.pillActive]}><Text style={styles.pillText}>{permissionCopy}</Text></View>
@@ -171,7 +173,7 @@ export function ListenScreen() {
       <SectionCard eyebrow="Field tips" title="Make the first clip count">
         <Text style={styles.tip}>• Keep clips around 5–15 seconds.</Text>
         <Text style={styles.tip}>• Point the phone toward the loudest singer.</Text>
-        <Text style={styles.tip}>• After you stop, the app uploads automatically.</Text>
+        <Text style={styles.tip}>• Each result is saved to the History tab for later review.</Text>
       </SectionCard>
     </ScrollView>
   )

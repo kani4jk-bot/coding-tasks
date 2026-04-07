@@ -8,6 +8,15 @@ type NativeClipFile = {
   mimeType?: string
 }
 
+type ApiError = {
+  request_id?: string
+  error?: {
+    code?: string
+    message?: string
+  }
+  detail?: string
+}
+
 export async function identifyBirdClip(file: NativeClipFile): Promise<IdentifyResponse> {
   const formData = new FormData()
   formData.append('audio', {
@@ -25,9 +34,15 @@ export async function identifyBirdClip(file: NativeClipFile): Promise<IdentifyRe
   })
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Unknown API error' }))
-    throw new Error(error.detail ?? 'Bird identification failed')
+    const error = (await response.json().catch(() => ({ detail: 'Unknown API error' }))) as ApiError
+    const message = error.error?.message ?? error.detail ?? 'Bird identification failed'
+    const code = error.error?.code ? ` (${error.error.code})` : ''
+    throw new Error(`${message}${code}`)
   }
 
   return response.json()
+}
+
+export function getApiBase() {
+  return API_BASE
 }

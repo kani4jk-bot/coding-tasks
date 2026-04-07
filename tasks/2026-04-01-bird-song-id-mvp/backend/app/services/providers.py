@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 
 from app.config import get_settings
-from app.schemas import IdentifyContext, SpeciesPrediction
+from app.schemas import BirdMetadata, IdentifyContext, SpeciesPrediction
 from app.services.audio import normalize_audio_for_birdnet, write_upload_to_temp
 from app.services.mock_birds import MOCK_BIRDS
 
@@ -42,6 +42,7 @@ class MockClassifierProvider(ClassifierProvider):
                     scientific_name=bird["scientific_name"],
                     confidence=min(confidence, 0.99),
                     reason=bird["reason"],
+                    metadata=BirdMetadata(**bird["metadata"]),
                 )
             )
 
@@ -63,7 +64,6 @@ class BirdNetProvider(ClassifierProvider):
 
         settings = get_settings()
         input_path = write_upload_to_temp(audio_bytes, filename)
-        normalized_path: Path | None = None
 
         try:
             normalized_path = normalize_audio_for_birdnet(input_path)
@@ -90,17 +90,18 @@ class BirdNetProvider(ClassifierProvider):
             shutil.rmtree(input_path.parent, ignore_errors=True)
 
     def _aggregate_detections(self, detections: list[dict], top_n: int) -> list[SpeciesPrediction]:
-        grouped: dict[str, dict] = defaultdict(lambda: {
-            "common_name": "Unknown bird",
-            "scientific_name": "Unknown",
-            "scores": [],
-            "windows": [],
-        })
+        grouped: dict[str, dict] = defaultdict(
+            lambda: {
+                "common_name": "Unknown bird",
+                "scientific_name": "Unknown",
+                "scores": [],
+                "windows": [],
+            }
+        )
 
         for detection in detections:
             common_name = detection.get("common_name") or "Unknown bird"
             scientific_name = detection.get("scientific_name") or "Unknown"
-            label = detection.get("label") or f"{scientific_name}_{common_name}"
             species_code = self._species_code(scientific_name, common_name)
             confidence = float(detection.get("confidence") or 0.0)
             window = (detection.get("start_time"), detection.get("end_time"))
@@ -108,7 +109,6 @@ class BirdNetProvider(ClassifierProvider):
             entry = grouped[species_code]
             entry["common_name"] = common_name
             entry["scientific_name"] = scientific_name
-            entry["label"] = label
             entry["scores"].append(confidence)
             entry["windows"].append(window)
 
@@ -129,6 +129,7 @@ class BirdNetProvider(ClassifierProvider):
                         f"BirdNET detected this species in {len(scores)} time window(s); "
                         f"strongest hit around {start:.1f}–{end:.1f}s."
                     ),
+                    metadata=None,
                 )
             )
 

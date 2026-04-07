@@ -1,4 +1,5 @@
 from datetime import date
+from uuid import uuid4
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
@@ -17,10 +18,17 @@ async def identify_bird(
 ):
     audio_bytes = await audio.read()
     context = IdentifyContext(latitude=latitude, longitude=longitude, recorded_on=recorded_on)
+    request_id = f"birdreq_{uuid4().hex[:12]}"
 
     try:
         return pipeline.run(audio=audio, audio_bytes=audio_bytes, context=context)
     except NotImplementedError as exc:
-        raise HTTPException(status_code=501, detail=str(exc)) from exc
+        error = HTTPException(status_code=501, detail=str(exc))
+        error.request_id = request_id
+        error.error_code = "provider_not_available"
+        raise error from exc
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        error = HTTPException(status_code=400, detail=str(exc))
+        error.request_id = request_id
+        error.error_code = "bad_audio_request"
+        raise error from exc
