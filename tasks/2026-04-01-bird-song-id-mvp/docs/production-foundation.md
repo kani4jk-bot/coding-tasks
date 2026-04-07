@@ -117,8 +117,9 @@ The API should stay stable even if the model stack changes. That means:
 - [x] backend API client contract mirrored in native app
 
 ### Phase 2 next
-- [ ] real microphone recording with Expo AV / Audio
+- [x] real microphone recording with Expo AV / Audio
 - [ ] upload from Files / media library
-- [ ] live request submission to backend
-- [ ] saved recent identifications
-- [ ] offline field notes and retry queue
+- [x] live request submission to backend
+- [x] saved recent identifications
+- [x] offline field notes and retry queue
+- [ ] smarter background/online-triggered retry policy

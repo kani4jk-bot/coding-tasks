@@ -1,13 +1,17 @@
 import { useCallback, useState } from 'react'
-import { useFocusEffect } from '@react-navigation/native'
+import { useFocusEffect, useNavigation } from '@react-navigation/native'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native'
 
 import { PrimaryButton } from '../components/PrimaryButton'
 import { SectionCard } from '../components/SectionCard'
 import { getApiBase } from '../lib/api'
 import { clearSightings, getHistoryStats } from '../lib/history'
+import { clearRetryQueue, getRetryQueueStats, processRetryQueue } from '../lib/retryQueue'
+import type { RootStackParamList } from '../types'
 
 export function SettingsScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
   const [stats, setStats] = useState({
     total: 0,
     starred: 0,
@@ -15,9 +19,18 @@ export function SettingsScreen() {
     uniqueSpecies: 0,
     latestSavedAt: null as string | null,
   })
+  const [queueStats, setQueueStats] = useState({
+    pending: 0,
+    attempted: 0,
+    newestQueuedAt: null as string | null,
+  })
+  const [queueMessage, setQueueMessage] = useState('')
+  const [queueProcessing, setQueueProcessing] = useState(false)
 
   const refresh = useCallback(async () => {
-    setStats(await getHistoryStats())
+    const [history, queue] = await Promise.all([getHistoryStats(), getRetryQueueStats()])
+    setStats(history)
+    setQueueStats(queue)
   }, [])
 
   useFocusEffect(
@@ -25,6 +38,35 @@ export function SettingsScreen() {
       refresh().catch(() => undefined)
     }, [refresh]),
   )
+
+  const handleRetryNow = useCallback(async () => {
+    setQueueProcessing(true)
+    setQueueMessage('')
+
+    try {
+      const result = await processRetryQueue()
+      await refresh()
+
+      if (!result.processed) {
+        setQueueMessage('Nothing is waiting in the retry queue.')
+        return
+      }
+
+      if (result.succeeded > 0) {
+        setQueueMessage(`${result.succeeded} queued clip${result.succeeded === 1 ? '' : 's'} uploaded successfully.`)
+        if (result.latestSuccess) {
+          navigation.navigate('Result', { result: result.latestSuccess })
+        }
+        return
+      }
+
+      setQueueMessage('Queued clips were retried, but they still could not reach the backend.')
+    } catch (err) {
+      setQueueMessage(err instanceof Error ? err.message : 'Could not retry queued clips.')
+    } finally {
+      setQueueProcessing(false)
+    }
+  }, [navigation, refresh])
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -45,6 +87,49 @@ export function SettingsScreen() {
             ? `Latest saved result: ${new Date(stats.latestSavedAt).toLocaleDateString()}`
             : 'No saved results yet.'}
         </Text>
+      </SectionCard>
+
+      <SectionCard eyebrow="Offline uploads" title="Retry queue on this device">
+        <View style={styles.statGrid}>
+          <Stat label="Pending clips" value={String(queueStats.pending)} />
+          <Stat label="Attempted" value={String(queueStats.attempted)} />
+        </View>
+        <Text style={styles.copy}>
+          {queueStats.newestQueuedAt
+            ? `Newest queued clip: ${new Date(queueStats.newestQueuedAt).toLocaleDateString()}`
+            : 'No queued uploads right now.'}
+        </Text>
+        <View style={styles.buttonStack}>
+          <PrimaryButton
+            title={queueProcessing ? 'Retrying queued clips…' : 'Retry queued clips now'}
+            variant="secondary"
+            onPress={() => {
+              handleRetryNow().catch(() => undefined)
+            }}
+            disabled={queueProcessing}
+          />
+          <PrimaryButton
+            title="Clear retry queue"
+            variant="secondary"
+            onPress={() => {
+              Alert.alert('Clear retry queue?', 'This deletes any saved offline clips that have not uploaded yet.', [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Clear',
+                  style: 'destructive',
+                  onPress: () => {
+                    clearRetryQueue()
+                      .then(() => refresh())
+                      .then(() => setQueueMessage('Retry queue cleared.'))
+                      .catch(() => undefined)
+                  },
+                },
+              ])
+            }}
+            disabled={queueProcessing || queueStats.pending === 0}
+          />
+        </View>
+        {queueMessage ? <Text style={styles.queueMessage}>{queueMessage}</Text> : null}
       </SectionCard>
 
       <SectionCard eyebrow="History" title="Storage controls">
@@ -70,7 +155,7 @@ export function SettingsScreen() {
       </SectionCard>
 
       <SectionCard eyebrow="Native app roadmap" title="What is still next">
-        <Text style={styles.copy}>Best next layer after this: a retry queue for weak connectivity, then richer species enrichment for real BirdNET matches.</Text>
+        <Text style={styles.copy}>After this retry foundation, the smart next layer is richer upload diagnostics plus optional background retry triggers when connectivity returns.</Text>
       </SectionCard>
     </ScrollView>
   )
@@ -103,6 +188,12 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     fontSize: 13,
   },
+  queueMessage: {
+    color: '#255F38',
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '700',
+  },
   statGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -128,5 +219,8 @@ const styles = StyleSheet.create({
     color: '#5B7162',
     fontSize: 13,
     fontWeight: '600',
+  },
+  buttonStack: {
+    gap: 10,
   },
 })

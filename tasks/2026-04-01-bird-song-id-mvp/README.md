@@ -59,6 +59,7 @@ This is a realistic MVP rather than vaporware:
 - Native location opt-in + device-date capture wired into upload context
 - Native local history tab with starred saved sightings, notes, deletion, and device stats
 - Native result screen with confidence band, summary, metadata, and editable field notes
+- Native offline retry queue groundwork that preserves failed uploads on-device and retries them later
 
 ### Honest limitations / still scaffolded
 
@@ -68,6 +69,7 @@ This is a realistic MVP rather than vaporware:
 - Species metadata is currently **groundwork**: rich for mock/demo species, sparse for raw BirdNET detections
 - No spectrogram preview yet
 - No offline on-device identification in the browser or native app
+- Retry queue is a practical foundation, not full background sync: retries happen when the app screen is opened or when the user taps retry
 
 ## Recommended provider mode
 

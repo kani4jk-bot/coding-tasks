@@ -17,6 +17,8 @@ This folder adds the Phase 2 native direction without touching the existing web 
 - live result handoff from backend response to the Result screen
 - editable field notes for saved sightings
 - local delete/clear controls and simple on-device history stats
+- offline retry queue that persists failed uploads and saved clip files on-device
+- manual retry + queue-clear controls in the native UI
 
 ## Current behavior
 
@@ -24,7 +26,9 @@ This folder adds the Phase 2 native direction without touching the existing web 
 - Location is an explicit opt-in. When enabled, the app asks for foreground permission and grabs a fresh fix right before upload.
 - Device date is attached by default and can be toggled off.
 - Second tap stops recording, uploads the clip plus any opted-in context to `/api/identify`, and opens the Result screen with the real API response.
-- Errors stay on the Listen screen so the flow fails honestly.
+- If upload fails after the recording is captured, the app copies that clip into app storage and adds it to a retry queue instead of just dropping it.
+- Opening the Listen screen automatically attempts queued retries; Settings also exposes manual retry and clear controls.
+- Errors still surface honestly on-screen, but the clip is preserved when queueing succeeds.
 
 ## Run
 

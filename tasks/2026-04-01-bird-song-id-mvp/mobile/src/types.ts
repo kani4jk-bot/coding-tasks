@@ -56,6 +56,26 @@ export type SavedSighting = {
   starred: boolean
 }
 
+export type QueuedIdentification = {
+  id: string
+  createdAt: string
+  updatedAt: string
+  clipUri: string
+  clipName: string
+  mimeType?: string
+  context?: CaptureContext
+  attempts: number
+  lastError?: string
+  lastTriedAt?: string
+}
+
+export type QueueProcessResult = {
+  processed: number
+  succeeded: number
+  failed: number
+  latestSuccess?: IdentifyResponse
+}
+
 export type RootStackParamList = {
   MainTabs: undefined
   Result: { result: IdentifyResponse }

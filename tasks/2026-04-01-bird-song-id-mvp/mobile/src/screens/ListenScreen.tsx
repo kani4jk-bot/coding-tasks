@@ -9,6 +9,7 @@ import { PrimaryButton } from '../components/PrimaryButton'
 import { SectionCard } from '../components/SectionCard'
 import { upsertSighting } from '../lib/history'
 import { identifyBirdClip } from '../lib/api'
+import { enqueueIdentification, getRetryQueueStats, processRetryQueue } from '../lib/retryQueue'
 import type { CaptureContext, LocationPermissionState, RecordingPermissionState, RootStackParamList } from '../types'
 
 function toPermissionState(granted: boolean, canAskAgain: boolean): RecordingPermissionState {
@@ -32,6 +33,13 @@ export function ListenScreen() {
   const [capturedDate, setCapturedDate] = useState<string>(() => new Date().toISOString().slice(0, 10))
   const [statusMessage, setStatusMessage] = useState('Tap once to start listening. Tap again to stop and identify.')
   const [error, setError] = useState<string | null>(null)
+  const [queueStats, setQueueStats] = useState({ pending: 0, attempted: 0, newestQueuedAt: null as string | null })
+  const [queueMessage, setQueueMessage] = useState('')
+  const [queueProcessing, setQueueProcessing] = useState(false)
+
+  const refreshQueueStats = useCallback(async () => {
+    setQueueStats(await getRetryQueueStats())
+  }, [])
 
   const syncPermission = useCallback(async () => {
     const current = await Audio.getPermissionsAsync()
@@ -43,16 +51,52 @@ export function ListenScreen() {
     setLocationPermissionState(toPermissionState(current.granted, current.canAskAgain))
   }, [])
 
+  const runQueuedRetries = useCallback(async (reason: 'auto' | 'manual') => {
+    setQueueProcessing(true)
+
+    try {
+      const result = await processRetryQueue()
+      await refreshQueueStats()
+
+      if (!result.processed) {
+        if (reason === 'manual') {
+          setQueueMessage('Nothing is waiting in the retry queue.')
+        }
+        return
+      }
+
+      if (result.succeeded > 0) {
+        const base = `${result.succeeded} queued clip${result.succeeded === 1 ? '' : 's'} uploaded successfully.`
+        setQueueMessage(result.failed > 0 ? `${base} ${result.failed} still waiting for another retry.` : base)
+      } else if (reason === 'manual') {
+        setQueueMessage('Queued clips were retried, but they still could not reach the backend.')
+      }
+
+      if (reason === 'manual' && result.latestSuccess) {
+        navigation.navigate('Result', { result: result.latestSuccess })
+      }
+    } catch (err) {
+      if (reason === 'manual') {
+        setQueueMessage(err instanceof Error ? err.message : 'Could not retry queued clips.')
+      }
+    } finally {
+      setQueueProcessing(false)
+    }
+  }, [navigation, refreshQueueStats])
+
   useEffect(() => {
     syncPermission().catch(() => undefined)
     syncLocationPermission().catch(() => undefined)
+    refreshQueueStats().catch(() => undefined)
     setCapturedDate(new Date().toISOString().slice(0, 10))
-  }, [syncLocationPermission, syncPermission])
+  }, [refreshQueueStats, syncLocationPermission, syncPermission])
 
   useFocusEffect(
     useCallback(() => {
       syncPermission().catch(() => undefined)
       syncLocationPermission().catch(() => undefined)
+      refreshQueueStats().catch(() => undefined)
+      runQueuedRetries('auto').catch(() => undefined)
       setCapturedDate(new Date().toISOString().slice(0, 10))
 
       return () => {
@@ -62,7 +106,7 @@ export function ListenScreen() {
           setStatus('idle')
         }
       }
-    }, [recording, syncLocationPermission, syncPermission]),
+    }, [recording, refreshQueueStats, runQueuedRetries, syncLocationPermission, syncPermission]),
   )
 
   const requestPermission = useCallback(async () => {
@@ -136,6 +180,11 @@ export function ListenScreen() {
     setStatus('uploading')
     setStatusMessage('Preparing clip, context, and backend lookup…')
     setError(null)
+    setQueueMessage('')
+
+    let uri: string | null = null
+    let context: CaptureContext = {}
+    const clipName = `birdsong-${Date.now()}.m4a`
 
     try {
       await recording.stopAndUnloadAsync()
@@ -144,14 +193,13 @@ export function ListenScreen() {
         playsInSilentModeIOS: true,
       })
 
-      const uri = recording.getURI()
+      uri = recording.getURI()
       setRecording(null)
 
       if (!uri) {
         throw new Error('Recording finished, but no audio file was produced.')
       }
 
-      let context: CaptureContext = {}
       if (useDateContext) {
         const recordedOn = new Date().toISOString().slice(0, 10)
         setCapturedDate(recordedOn)
@@ -173,22 +221,42 @@ export function ListenScreen() {
       setStatusMessage('Uploading clip and asking the backend for a match…')
       const result = await identifyBirdClip({
         uri,
-        name: `birdsong-${Date.now()}.m4a`,
+        name: clipName,
         mimeType: 'audio/m4a',
         context,
       })
 
       await upsertSighting(result)
+      await refreshQueueStats()
       setStatus('idle')
       setStatusMessage(`Top match ready: ${result.top_match.common_name}`)
       navigation.navigate('Result', { result })
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not finish identification.'
+
+      if (uri) {
+        try {
+          await enqueueIdentification({
+            clipUri: uri,
+            clipName,
+            mimeType: 'audio/m4a',
+            context,
+            lastError: message,
+          })
+          await refreshQueueStats()
+          setQueueMessage('Upload failed, so this clip was saved to the retry queue for later.')
+        } catch (queueErr) {
+          const queueMessageText = queueErr instanceof Error ? queueErr.message : 'Could not save the clip for retry.'
+          setQueueMessage(queueMessageText)
+        }
+      }
+
       setRecording(null)
       setStatus('idle')
       setStatusMessage('Tap once to start listening. Tap again to stop and identify.')
-      setError(err instanceof Error ? err.message : 'Could not finish identification.')
+      setError(message)
     }
-  }, [navigation, recording, refreshLocationContext, useDateContext, useLocationContext])
+  }, [navigation, recording, refreshLocationContext, refreshQueueStats, useDateContext, useLocationContext])
 
   const handlePrimaryPress = useCallback(async () => {
     if (status === 'uploading') return
@@ -244,6 +312,7 @@ export function ListenScreen() {
           <View style={[styles.pill, useDateContext && styles.pillActive]}><Text style={styles.pillText}>{useDateContext ? 'Date on' : 'Date off'}</Text></View>
           <View style={[styles.pill, status === 'recording' && styles.pillActive]}><Text style={styles.pillText}>Recording</Text></View>
           <View style={[styles.pill, status === 'uploading' && styles.pillProcessing]}><Text style={styles.pillText}>Identifying</Text></View>
+          <View style={[styles.pill, queueStats.pending > 0 && styles.pillQueued]}><Text style={styles.pillText}>Queued {queueStats.pending}</Text></View>
         </View>
       </SectionCard>
 
@@ -277,6 +346,29 @@ export function ListenScreen() {
         <Text style={styles.contextPreview}>Date preview: {useDateContext ? capturedDate : 'No date attached'}</Text>
       </SectionCard>
 
+      <SectionCard eyebrow="Retry queue" title="Don’t lose a field clip to bad signal">
+        <Text style={styles.helper}>
+          If upload fails, the app now saves the recording locally and retries it later. Opening this screen will make another pass automatically.
+        </Text>
+        <Text style={styles.contextPreview}>
+          Pending clips: {queueStats.pending} • Previously attempted: {queueStats.attempted}
+        </Text>
+        {queueStats.newestQueuedAt ? (
+          <Text style={styles.contextPreview}>Newest queued clip: {new Date(queueStats.newestQueuedAt).toLocaleDateString()}</Text>
+        ) : null}
+        <View style={styles.buttonStack}>
+          <PrimaryButton
+            title={queueProcessing ? 'Retrying queued clips…' : 'Retry queued clips now'}
+            onPress={() => {
+              runQueuedRetries('manual').catch(() => undefined)
+            }}
+            disabled={queueProcessing || status === 'recording' || status === 'uploading'}
+            variant="secondary"
+          />
+        </View>
+        {queueMessage ? <Text style={styles.queueMessage}>{queueMessage}</Text> : null}
+      </SectionCard>
+
       <SectionCard eyebrow="One-tap flow" title={status === 'recording' ? 'Tap to stop and identify' : 'Tap to start listening'}>
         <Text style={styles.helper}>{statusMessage}</Text>
         <View style={styles.buttonStack}>
@@ -308,7 +400,7 @@ export function ListenScreen() {
         <Text style={styles.tip}>• Keep clips around 5–15 seconds.</Text>
         <Text style={styles.tip}>• Point the phone toward the loudest singer.</Text>
         <Text style={styles.tip}>• Location is opt-in, but it helps a lot when similar species overlap.</Text>
-        <Text style={styles.tip}>• Each result is saved to the History tab for later review.</Text>
+        <Text style={styles.tip}>• If you lose signal, the retry queue keeps the clip around for another shot.</Text>
       </SectionCard>
     </ScrollView>
   )
@@ -335,6 +427,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 21,
   },
+  queueMessage: {
+    color: '#255F38',
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '700',
+  },
   statusRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -351,6 +449,9 @@ const styles = StyleSheet.create({
   },
   pillProcessing: {
     backgroundColor: '#F6E1CF',
+  },
+  pillQueued: {
+    backgroundColor: '#E8E0FA',
   },
   pillText: {
     color: '#255F38',
