@@ -13,6 +13,8 @@ class BirdMetadata(BaseModel):
     seasonal_status: str | None = None
     conservation_status: str | None = None
     look_for: list[str] = Field(default_factory=list)
+    description: str | None = None
+    image_url: str | None = None
 
 
 class SpeciesPrediction(BaseModel):

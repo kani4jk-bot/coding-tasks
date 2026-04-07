@@ -1,31 +1,17 @@
 import { useCallback, useState } from 'react'
-import { useFocusEffect, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useFocusEffect } from '@react-navigation/native'
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
-import { PrimaryButton } from '../components/PrimaryButton'
-import { SectionCard } from '../components/SectionCard'
 import { getApiBase } from '../lib/api'
 import { clearSightings, getHistoryStats } from '../lib/history'
 import { clearRetryQueue, getRetryQueueStats, processRetryQueue } from '../lib/retryQueue'
-import type { RootStackParamList } from '../types'
 
 export function SettingsScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
-  const [stats, setStats] = useState({
-    total: 0,
-    starred: 0,
-    noted: 0,
-    uniqueSpecies: 0,
-    latestSavedAt: null as string | null,
-  })
-  const [queueStats, setQueueStats] = useState({
-    pending: 0,
-    attempted: 0,
-    newestQueuedAt: null as string | null,
-  })
-  const [queueMessage, setQueueMessage] = useState('')
+  const [stats, setStats] = useState({ total: 0, starred: 0, noted: 0, uniqueSpecies: 0, latestSavedAt: null as string | null })
+  const [queueStats, setQueueStats] = useState({ pending: 0, attempted: 0, newestQueuedAt: null as string | null })
   const [queueProcessing, setQueueProcessing] = useState(false)
+  const [message, setMessage] = useState('')
 
   const refresh = useCallback(async () => {
     const [history, queue] = await Promise.all([getHistoryStats(), getRetryQueueStats()])
@@ -33,135 +19,109 @@ export function SettingsScreen() {
     setQueueStats(queue)
   }, [])
 
-  useFocusEffect(
-    useCallback(() => {
-      refresh().catch(() => undefined)
-    }, [refresh]),
-  )
+  useFocusEffect(useCallback(() => { refresh().catch(() => undefined) }, [refresh]))
 
   const handleRetryNow = useCallback(async () => {
     setQueueProcessing(true)
-    setQueueMessage('')
-
+    setMessage('')
     try {
       const result = await processRetryQueue()
       await refresh()
-
-      if (!result.processed) {
-        setQueueMessage('Nothing is waiting in the retry queue.')
-        return
-      }
-
-      if (result.succeeded > 0) {
-        setQueueMessage(`${result.succeeded} queued clip${result.succeeded === 1 ? '' : 's'} uploaded successfully.`)
-        if (result.latestSuccess) {
-          navigation.navigate('Result', { result: result.latestSuccess })
-        }
-        return
-      }
-
-      setQueueMessage('Queued clips were retried, but they still could not reach the backend.')
+      if (!result.processed) { setMessage('Nothing in the retry queue.'); return }
+      setMessage(result.succeeded > 0 ? `${result.succeeded} clip${result.succeeded === 1 ? '' : 's'} uploaded.` : 'Retry failed — will try again later.')
     } catch (err) {
-      setQueueMessage(err instanceof Error ? err.message : 'Could not retry queued clips.')
+      setMessage(err instanceof Error ? err.message : 'Retry failed.')
     } finally {
       setQueueProcessing(false)
     }
-  }, [navigation, refresh])
+  }, [refresh])
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      <SectionCard eyebrow="Backend" title="Service connection">
-        <Text style={styles.copy}>Uses `EXPO_PUBLIC_API_BASE` when set.</Text>
-        <Text style={styles.mono}>{getApiBase()}</Text>
-      </SectionCard>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <Text style={styles.screenTitle}>Settings</Text>
 
-      <SectionCard eyebrow="Field journal" title="Saved sightings on this device">
-        <View style={styles.statGrid}>
-          <Stat label="Saved clips" value={String(stats.total)} />
-          <Stat label="Starred" value={String(stats.starred)} />
-          <Stat label="With notes" value={String(stats.noted)} />
-          <Stat label="Species seen" value={String(stats.uniqueSpecies)} />
-        </View>
-        <Text style={styles.copy}>
-          {stats.latestSavedAt
-            ? `Latest saved result: ${new Date(stats.latestSavedAt).toLocaleDateString()}`
-            : 'No saved results yet.'}
-        </Text>
-      </SectionCard>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
 
-      <SectionCard eyebrow="Offline uploads" title="Retry queue on this device">
+        {/* Stats */}
+        <Text style={styles.sectionHeader}>Field journal</Text>
         <View style={styles.statGrid}>
-          <Stat label="Pending clips" value={String(queueStats.pending)} />
-          <Stat label="Attempted" value={String(queueStats.attempted)} />
+          <StatCard label="Saved clips" value={String(stats.total)} />
+          <StatCard label="Starred" value={String(stats.starred)} />
+          <StatCard label="With notes" value={String(stats.noted)} />
+          <StatCard label="Species" value={String(stats.uniqueSpecies)} />
         </View>
-        <Text style={styles.copy}>
-          {queueStats.newestQueuedAt
-            ? `Newest queued clip: ${new Date(queueStats.newestQueuedAt).toLocaleDateString()}`
-            : 'No queued uploads right now.'}
-        </Text>
-        <View style={styles.buttonStack}>
-          <PrimaryButton
-            title={queueProcessing ? 'Retrying queued clips…' : 'Retry queued clips now'}
-            variant="secondary"
+
+        {/* Queue */}
+        <Text style={styles.sectionHeader}>Offline queue</Text>
+        <View style={styles.group}>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Pending clips</Text>
+            <Text style={styles.infoValue}>{queueStats.pending}</Text>
+          </View>
+          <View style={[styles.infoRow, styles.infoRowLast]}>
+            <Text style={styles.infoLabel}>Previously attempted</Text>
+            <Text style={styles.infoValue}>{queueStats.attempted}</Text>
+          </View>
+        </View>
+
+        {message ? <Text style={styles.message}>{message}</Text> : null}
+
+        {/* Actions */}
+        <Text style={styles.sectionHeader}>Actions</Text>
+        <View style={styles.group}>
+          <Pressable
+            style={styles.actionRow}
+            onPress={() => { handleRetryNow().catch(() => undefined) }}
+            disabled={queueProcessing || queueStats.pending === 0}
+          >
+            <Text style={[styles.actionLabel, (queueProcessing || queueStats.pending === 0) && styles.actionDisabled]}>
+              {queueProcessing ? 'Retrying…' : 'Retry queued clips'}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.actionRow}
             onPress={() => {
-              handleRetryNow().catch(() => undefined)
-            }}
-            disabled={queueProcessing}
-          />
-          <PrimaryButton
-            title="Clear retry queue"
-            variant="secondary"
-            onPress={() => {
-              Alert.alert('Clear retry queue?', 'This deletes any saved offline clips that have not uploaded yet.', [
+              Alert.alert('Clear retry queue?', 'Deletes saved offline clips that haven\'t uploaded.', [
                 { text: 'Cancel', style: 'cancel' },
-                {
-                  text: 'Clear',
-                  style: 'destructive',
-                  onPress: () => {
-                    clearRetryQueue()
-                      .then(() => refresh())
-                      .then(() => setQueueMessage('Retry queue cleared.'))
-                      .catch(() => undefined)
-                  },
-                },
+                { text: 'Clear', style: 'destructive', onPress: () => { clearRetryQueue().then(refresh).then(() => setMessage('Queue cleared.')).catch(() => undefined) } },
               ])
             }}
-            disabled={queueProcessing || queueStats.pending === 0}
-          />
+            disabled={queueStats.pending === 0}
+          >
+            <Text style={[styles.actionLabel, styles.actionDestructive, queueStats.pending === 0 && styles.actionDisabled]}>
+              Clear retry queue
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={[styles.actionRow, styles.actionRowLast]}
+            onPress={() => {
+              Alert.alert('Clear all history?', 'Removes all saved sightings, stars, and notes from this device.', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Clear', style: 'destructive', onPress: () => { clearSightings().then(refresh).catch(() => undefined) } },
+              ])
+            }}
+          >
+            <Text style={[styles.actionLabel, styles.actionDestructive]}>Clear all history</Text>
+          </Pressable>
         </View>
-        {queueMessage ? <Text style={styles.queueMessage}>{queueMessage}</Text> : null}
-      </SectionCard>
 
-      <SectionCard eyebrow="History" title="Storage controls">
-        <Text style={styles.copy}>History is local-only for now. Clear it if you want a clean slate before field testing.</Text>
-        <PrimaryButton
-          title="Clear all saved sightings"
-          variant="secondary"
-          onPress={() => {
-            Alert.alert('Clear all history?', 'This removes all saved sightings, stars, and notes from this device.', [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Clear',
-                style: 'destructive',
-                onPress: () => {
-                  clearSightings()
-                    .then(() => refresh())
-                    .catch(() => undefined)
-                },
-              },
-            ])
-          }}
-        />
-      </SectionCard>
+        {/* Backend info */}
+        <Text style={styles.sectionHeader}>Backend</Text>
+        <View style={styles.group}>
+          <View style={[styles.infoRow, styles.infoRowLast]}>
+            <Text style={styles.infoLabel}>API</Text>
+            <Text style={styles.apiUrl} numberOfLines={1}>{getApiBase()}</Text>
+          </View>
+        </View>
 
-      <SectionCard eyebrow="Native app roadmap" title="What is still next">
-        <Text style={styles.copy}>After this retry foundation, the smart next layer is richer upload diagnostics plus optional background retry triggers when connectivity returns.</Text>
-      </SectionCard>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   )
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.statCard}>
       <Text style={styles.statValue}>{value}</Text>
@@ -171,56 +131,125 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  content: {
-    padding: 16,
-    gap: 16,
+  container: {
+    flex: 1,
     backgroundColor: '#F4F7F1',
-    flexGrow: 1,
   },
-  copy: {
-    color: '#4E6557',
-    fontSize: 15,
-    lineHeight: 21,
+  screenTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#102016',
+    letterSpacing: -0.5,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
-  mono: {
-    marginTop: 10,
-    color: '#255F38',
-    fontFamily: 'monospace',
-    fontSize: 13,
+  content: {
+    paddingHorizontal: 16,
+    paddingBottom: 40,
+    gap: 6,
   },
-  queueMessage: {
-    color: '#255F38',
-    fontSize: 14,
-    lineHeight: 20,
+  sectionHeader: {
+    fontSize: 12,
     fontWeight: '700',
+    color: '#7A9484',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    paddingHorizontal: 4,
+    marginTop: 16,
+    marginBottom: 6,
   },
   statGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 8,
   },
   statCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     minWidth: '47%',
     flexGrow: 1,
-    borderRadius: 16,
-    backgroundColor: '#F6FAF4',
-    borderWidth: 1,
-    borderColor: '#E1EADF',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
     gap: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   statValue: {
-    color: '#255F38',
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '800',
+    color: '#255F38',
   },
   statLabel: {
-    color: '#5B7162',
     fontSize: 13,
+    color: '#7A9484',
     fontWeight: '600',
   },
-  buttonStack: {
-    gap: 10,
+  group: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#EBF0E8',
+  },
+  infoRowLast: {
+    borderBottomWidth: 0,
+  },
+  infoLabel: {
+    fontSize: 15,
+    color: '#1C2E22',
+    fontWeight: '500',
+  },
+  infoValue: {
+    fontSize: 15,
+    color: '#5B7162',
+    fontWeight: '700',
+  },
+  apiUrl: {
+    fontSize: 13,
+    color: '#7A9484',
+    maxWidth: '60%',
+  },
+  actionRow: {
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#EBF0E8',
+  },
+  actionRowLast: {
+    borderBottomWidth: 0,
+  },
+  actionLabel: {
+    fontSize: 15,
+    color: '#255F38',
+    fontWeight: '600',
+  },
+  actionDestructive: {
+    color: '#9B2335',
+  },
+  actionDisabled: {
+    opacity: 0.35,
+  },
+  message: {
+    fontSize: 13,
+    color: '#255F38',
+    fontWeight: '600',
+    paddingHorizontal: 4,
+    marginTop: 4,
   },
 })

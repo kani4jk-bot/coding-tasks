@@ -1,12 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Audio } from 'expo-av'
 import * as Location from 'expo-location'
-import { Linking, ScrollView, StyleSheet, Switch, Text, View } from 'react-native'
+import { Animated, Linking, Pressable, StyleSheet, Switch, Text, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
-import { PrimaryButton } from '../components/PrimaryButton'
-import { SectionCard } from '../components/SectionCard'
 import { upsertSighting } from '../lib/history'
 import { identifyBirdClip } from '../lib/api'
 import { enqueueIdentification, getRetryQueueStats, processRetryQueue } from '../lib/retryQueue'
@@ -14,11 +13,6 @@ import type { CaptureContext, LocationPermissionState, RecordingPermissionState,
 
 function toPermissionState(granted: boolean, canAskAgain: boolean): RecordingPermissionState {
   return granted ? 'granted' : canAskAgain ? 'undetermined' : 'denied'
-}
-
-function formatLocationPreview(latitude?: number, longitude?: number) {
-  if (typeof latitude !== 'number' || typeof longitude !== 'number') return 'No location attached yet'
-  return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
 }
 
 export function ListenScreen() {
@@ -30,12 +24,34 @@ export function ListenScreen() {
   const [useLocationContext, setUseLocationContext] = useState(false)
   const [useDateContext, setUseDateContext] = useState(true)
   const [capturedLocation, setCapturedLocation] = useState<{ latitude: number; longitude: number } | null>(null)
-  const [capturedDate, setCapturedDate] = useState<string>(() => new Date().toISOString().slice(0, 10))
-  const [statusMessage, setStatusMessage] = useState('Tap once to start listening. Tap again to stop and identify.')
   const [error, setError] = useState<string | null>(null)
   const [queueStats, setQueueStats] = useState({ pending: 0, attempted: 0, newestQueuedAt: null as string | null })
-  const [queueMessage, setQueueMessage] = useState('')
   const [queueProcessing, setQueueProcessing] = useState(false)
+
+  const pulseAnim = useRef(new Animated.Value(1)).current
+  const pulseOpacity = useRef(new Animated.Value(0)).current
+
+  useEffect(() => {
+    if (status === 'recording') {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 1.35, duration: 800, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+        ])
+      ).start()
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseOpacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+          Animated.timing(pulseOpacity, { toValue: 0, duration: 800, useNativeDriver: true }),
+        ])
+      ).start()
+    } else {
+      pulseAnim.stopAnimation()
+      pulseOpacity.stopAnimation()
+      pulseAnim.setValue(1)
+      pulseOpacity.setValue(0)
+    }
+  }, [status, pulseAnim, pulseOpacity])
 
   const refreshQueueStats = useCallback(async () => {
     setQueueStats(await getRetryQueueStats())
@@ -51,34 +67,16 @@ export function ListenScreen() {
     setLocationPermissionState(toPermissionState(current.granted, current.canAskAgain))
   }, [])
 
-  const runQueuedRetries = useCallback(async (reason: 'auto' | 'manual') => {
+  const runQueuedRetries = useCallback(async () => {
     setQueueProcessing(true)
-
     try {
       const result = await processRetryQueue()
       await refreshQueueStats()
-
-      if (!result.processed) {
-        if (reason === 'manual') {
-          setQueueMessage('Nothing is waiting in the retry queue.')
-        }
-        return
-      }
-
-      if (result.succeeded > 0) {
-        const base = `${result.succeeded} queued clip${result.succeeded === 1 ? '' : 's'} uploaded successfully.`
-        setQueueMessage(result.failed > 0 ? `${base} ${result.failed} still waiting for another retry.` : base)
-      } else if (reason === 'manual') {
-        setQueueMessage('Queued clips were retried, but they still could not reach the backend.')
-      }
-
-      if (reason === 'manual' && result.latestSuccess) {
+      if (result.succeeded > 0 && result.latestSuccess) {
         navigation.navigate('Result', { result: result.latestSuccess })
       }
-    } catch (err) {
-      if (reason === 'manual') {
-        setQueueMessage(err instanceof Error ? err.message : 'Could not retry queued clips.')
-      }
+    } catch {
+      // silent on auto-retry
     } finally {
       setQueueProcessing(false)
     }
@@ -88,7 +86,6 @@ export function ListenScreen() {
     syncPermission().catch(() => undefined)
     syncLocationPermission().catch(() => undefined)
     refreshQueueStats().catch(() => undefined)
-    setCapturedDate(new Date().toISOString().slice(0, 10))
   }, [refreshQueueStats, syncLocationPermission, syncPermission])
 
   useFocusEffect(
@@ -96,8 +93,7 @@ export function ListenScreen() {
       syncPermission().catch(() => undefined)
       syncLocationPermission().catch(() => undefined)
       refreshQueueStats().catch(() => undefined)
-      runQueuedRetries('auto').catch(() => undefined)
-      setCapturedDate(new Date().toISOString().slice(0, 10))
+      runQueuedRetries().catch(() => undefined)
 
       return () => {
         if (recording) {
@@ -113,38 +109,22 @@ export function ListenScreen() {
     setError(null)
     const result = await Audio.requestPermissionsAsync()
     setPermissionState(toPermissionState(result.granted, result.canAskAgain))
-    if (!result.granted) {
-      setError('Microphone access is required to record bird songs on your phone.')
-    }
+    if (!result.granted) setError('Microphone access is needed to record bird songs.')
     return result.granted
   }, [])
 
   const requestLocationPermission = useCallback(async () => {
-    setError(null)
     const result = await Location.requestForegroundPermissionsAsync()
     setLocationPermissionState(toPermissionState(result.granted, result.canAskAgain))
-
-    if (!result.granted) {
-      setCapturedLocation(null)
-      setError('Location is optional, but enabling it can improve similar-species matches.')
-    }
-
+    if (!result.granted) setCapturedLocation(null)
     return result.granted
   }, [])
 
   const refreshLocationContext = useCallback(async () => {
     const hasPermission = locationPermissionState === 'granted' ? true : await requestLocationPermission()
     if (!hasPermission) return null
-
-    const location = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
-    })
-
-    const next = {
-      latitude: location.coords.latitude,
-      longitude: location.coords.longitude,
-    }
-
+    const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+    const next = { latitude: location.coords.latitude, longitude: location.coords.longitude }
     setCapturedLocation(next)
     return next
   }, [locationPermissionState, requestLocationPermission])
@@ -152,347 +132,320 @@ export function ListenScreen() {
   const startRecording = useCallback(async () => {
     const hasPermission = permissionState === 'granted' ? true : await requestPermission()
     if (!hasPermission) return
-
     setError(null)
     setStatus('recording')
-    setStatusMessage('Listening now… tap again when the bird call is done.')
-
     try {
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      })
-
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true })
       const nextRecording = new Audio.Recording()
       await nextRecording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY)
       await nextRecording.startAsync()
       setRecording(nextRecording)
     } catch (err) {
       setStatus('idle')
-      setStatusMessage('Tap once to start listening. Tap again to stop and identify.')
       setError(err instanceof Error ? err.message : 'Could not start recording.')
     }
   }, [permissionState, requestPermission])
 
   const stopRecordingAndIdentify = useCallback(async () => {
     if (!recording) return
-
     setStatus('uploading')
-    setStatusMessage('Preparing clip, context, and backend lookup…')
     setError(null)
-    setQueueMessage('')
-
     let uri: string | null = null
     let context: CaptureContext = {}
     const clipName = `birdsong-${Date.now()}.m4a`
 
     try {
       await recording.stopAndUnloadAsync()
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-      })
-
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true })
       uri = recording.getURI()
       setRecording(null)
+      if (!uri) throw new Error('Recording finished but no audio file was produced.')
 
-      if (!uri) {
-        throw new Error('Recording finished, but no audio file was produced.')
-      }
-
-      if (useDateContext) {
-        const recordedOn = new Date().toISOString().slice(0, 10)
-        setCapturedDate(recordedOn)
-        context.recordedOn = recordedOn
-      }
-
+      if (useDateContext) context.recordedOn = new Date().toISOString().slice(0, 10)
       if (useLocationContext) {
-        setStatusMessage('Getting your current location for a better match…')
         const location = await refreshLocationContext()
-        if (location) {
-          context = {
-            ...context,
-            latitude: location.latitude,
-            longitude: location.longitude,
-          }
-        }
+        if (location) context = { ...context, latitude: location.latitude, longitude: location.longitude }
       }
 
-      setStatusMessage('Uploading clip and asking the backend for a match…')
-      const result = await identifyBirdClip({
-        uri,
-        name: clipName,
-        mimeType: 'audio/m4a',
-        context,
-      })
-
+      const result = await identifyBirdClip({ uri, name: clipName, mimeType: 'audio/m4a', context })
       await upsertSighting(result)
       await refreshQueueStats()
       setStatus('idle')
-      setStatusMessage(`Top match ready: ${result.top_match.common_name}`)
       navigation.navigate('Result', { result })
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not finish identification.'
-
       if (uri) {
         try {
-          await enqueueIdentification({
-            clipUri: uri,
-            clipName,
-            mimeType: 'audio/m4a',
-            context,
-            lastError: message,
-          })
+          await enqueueIdentification({ clipUri: uri, clipName, mimeType: 'audio/m4a', context, lastError: message })
           await refreshQueueStats()
-          setQueueMessage('Upload failed, so this clip was saved to the retry queue for later.')
-        } catch (queueErr) {
-          const queueMessageText = queueErr instanceof Error ? queueErr.message : 'Could not save the clip for retry.'
-          setQueueMessage(queueMessageText)
+        } catch {
+          // queue save failed silently
         }
       }
-
       setRecording(null)
       setStatus('idle')
-      setStatusMessage('Tap once to start listening. Tap again to stop and identify.')
       setError(message)
     }
   }, [navigation, recording, refreshLocationContext, refreshQueueStats, useDateContext, useLocationContext])
 
   const handlePrimaryPress = useCallback(async () => {
     if (status === 'uploading') return
-    if (status === 'recording') {
-      await stopRecordingAndIdentify()
-      return
-    }
+    if (status === 'recording') { await stopRecordingAndIdentify(); return }
     await startRecording()
   }, [startRecording, status, stopRecordingAndIdentify])
 
   const handleLocationToggle = useCallback(async (nextValue: boolean) => {
     setUseLocationContext(nextValue)
     setError(null)
-
-    if (!nextValue) {
-      setCapturedLocation(null)
-      return
-    }
-
-    try {
-      setStatusMessage('Checking location permission…')
-      await refreshLocationContext()
-      setStatusMessage('Tap once to start listening. Tap again to stop and identify.')
-    } catch (err) {
-      setUseLocationContext(false)
-      setStatusMessage('Tap once to start listening. Tap again to stop and identify.')
-      setError(err instanceof Error ? err.message : 'Could not get your location.')
-    }
+    if (!nextValue) { setCapturedLocation(null); return }
+    try { await refreshLocationContext() } catch { setUseLocationContext(false) }
   }, [refreshLocationContext])
 
-  const permissionCopy = useMemo(() => {
-    if (permissionState === 'granted') return 'Mic ready'
-    if (permissionState === 'denied') return 'Mic blocked'
-    return 'Permission needed'
-  }, [permissionState])
+  const buttonLabel = useMemo(() => {
+    if (status === 'uploading') return 'Identifying…'
+    if (status === 'recording') return 'Tap to stop'
+    return 'Tap to listen'
+  }, [status])
 
-  const locationCopy = useMemo(() => {
-    if (!useLocationContext) return 'Location off'
-    if (locationPermissionState === 'granted') return 'Location ready'
-    if (locationPermissionState === 'denied') return 'Location blocked'
-    return 'Location opt-in'
-  }, [locationPermissionState, useLocationContext])
+  const buttonIcon = useMemo(() => {
+    if (status === 'uploading') return '◌'
+    if (status === 'recording') return '■'
+    return '●'
+  }, [status])
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      <SectionCard eyebrow="Field capture" title="Listen for the loudest bird">
-        <Text style={styles.lede}>
-          Record a real clip, send it to the API, and save the result into your local field history automatically.
-        </Text>
-        <View style={styles.statusRow}>
-          <View style={[styles.pill, permissionState === 'granted' && styles.pillActive]}><Text style={styles.pillText}>{permissionCopy}</Text></View>
-          <View style={[styles.pill, useLocationContext && locationPermissionState === 'granted' && styles.pillActive]}><Text style={styles.pillText}>{locationCopy}</Text></View>
-          <View style={[styles.pill, useDateContext && styles.pillActive]}><Text style={styles.pillText}>{useDateContext ? 'Date on' : 'Date off'}</Text></View>
-          <View style={[styles.pill, status === 'recording' && styles.pillActive]}><Text style={styles.pillText}>Recording</Text></View>
-          <View style={[styles.pill, status === 'uploading' && styles.pillProcessing]}><Text style={styles.pillText}>Identifying</Text></View>
-          <View style={[styles.pill, queueStats.pending > 0 && styles.pillQueued]}><Text style={styles.pillText}>Queued {queueStats.pending}</Text></View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Header row */}
+      <View style={styles.header}>
+        <Text style={styles.appTitle}>Birdsong ID</Text>
+        <View style={styles.headerRight}>
+          {queueStats.pending > 0 && (
+            <Pressable onPress={() => { runQueuedRetries().catch(() => undefined) }} disabled={queueProcessing}>
+              <View style={styles.queueBadge}>
+                <Text style={styles.queueBadgeText}>{queueStats.pending} queued</Text>
+              </View>
+            </Pressable>
+          )}
         </View>
-      </SectionCard>
+      </View>
 
-      <SectionCard eyebrow="Context before upload" title="Attach the clues that help most">
-        <View style={styles.toggleRow}>
-          <View style={styles.toggleCopy}>
-            <Text style={styles.toggleTitle}>Use current location</Text>
-            <Text style={styles.toggleHelp}>Optional. Ask once, then attach a fresh GPS fix right before upload.</Text>
-          </View>
-          <Switch value={useLocationContext} onValueChange={(value) => { handleLocationToggle(value).catch(() => undefined) }} />
+      {/* Status chips */}
+      <View style={styles.statusRow}>
+        <View style={[styles.chip, permissionState === 'granted' && styles.chipActive]}>
+          <Text style={styles.chipText}>
+            {permissionState === 'granted' ? '🎙 Ready' : permissionState === 'denied' ? '🎙 Blocked' : '🎙 Tap to allow'}
+          </Text>
         </View>
-        <Text style={styles.contextPreview}>Location preview: {formatLocationPreview(capturedLocation?.latitude, capturedLocation?.longitude)}</Text>
-        {locationPermissionState === 'denied' ? (
-          <PrimaryButton
-            title="Open app settings"
-            onPress={() => {
-              Linking.openSettings().catch(() => undefined)
-            }}
-            variant="secondary"
-            disabled={status === 'recording' || status === 'uploading'}
+        {useLocationContext && (
+          <View style={[styles.chip, locationPermissionState === 'granted' && styles.chipActive]}>
+            <Text style={styles.chipText}>
+              {capturedLocation ? '📍 Located' : locationPermissionState === 'denied' ? '📍 Blocked' : '📍 Getting…'}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      {/* Center — record button */}
+      <View style={styles.center}>
+        <View style={styles.buttonWrap}>
+          <Animated.View
+            style={[
+              styles.pulseRing,
+              { transform: [{ scale: pulseAnim }], opacity: pulseOpacity },
+            ]}
           />
-        ) : null}
+          <Pressable
+            style={[
+              styles.recordButton,
+              status === 'recording' && styles.recordButtonActive,
+              status === 'uploading' && styles.recordButtonUploading,
+            ]}
+            onPress={() => { handlePrimaryPress().catch(() => undefined) }}
+            disabled={status === 'uploading'}
+          >
+            <Text style={styles.recordIcon}>{buttonIcon}</Text>
+          </Pressable>
+        </View>
+
+        <Text style={styles.buttonLabel}>{buttonLabel}</Text>
+
+        {permissionState === 'denied' && (
+          <Pressable onPress={() => { Linking.openSettings().catch(() => undefined) }}>
+            <Text style={styles.permissionLink}>Open Settings to allow microphone</Text>
+          </Pressable>
+        )}
+
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+      </View>
+
+      {/* Bottom — context toggles */}
+      <View style={styles.bottom}>
+        <View style={styles.toggleRow}>
+          <Text style={styles.toggleLabel}>📍  Location context</Text>
+          <Switch
+            value={useLocationContext}
+            onValueChange={(v) => { handleLocationToggle(v).catch(() => undefined) }}
+            trackColor={{ true: '#255F38' }}
+          />
+        </View>
         <View style={styles.divider} />
         <View style={styles.toggleRow}>
-          <View style={styles.toggleCopy}>
-            <Text style={styles.toggleTitle}>Use device date</Text>
-            <Text style={styles.toggleHelp}>On by default. No extra permission needed.</Text>
-          </View>
-          <Switch value={useDateContext} onValueChange={setUseDateContext} />
-        </View>
-        <Text style={styles.contextPreview}>Date preview: {useDateContext ? capturedDate : 'No date attached'}</Text>
-      </SectionCard>
-
-      <SectionCard eyebrow="Retry queue" title="Don’t lose a field clip to bad signal">
-        <Text style={styles.helper}>
-          If upload fails, the app now saves the recording locally and retries it later. Opening this screen will make another pass automatically.
-        </Text>
-        <Text style={styles.contextPreview}>
-          Pending clips: {queueStats.pending} • Previously attempted: {queueStats.attempted}
-        </Text>
-        {queueStats.newestQueuedAt ? (
-          <Text style={styles.contextPreview}>Newest queued clip: {new Date(queueStats.newestQueuedAt).toLocaleDateString()}</Text>
-        ) : null}
-        <View style={styles.buttonStack}>
-          <PrimaryButton
-            title={queueProcessing ? 'Retrying queued clips…' : 'Retry queued clips now'}
-            onPress={() => {
-              runQueuedRetries('manual').catch(() => undefined)
-            }}
-            disabled={queueProcessing || status === 'recording' || status === 'uploading'}
-            variant="secondary"
+          <Text style={styles.toggleLabel}>📅  Date context</Text>
+          <Switch
+            value={useDateContext}
+            onValueChange={setUseDateContext}
+            trackColor={{ true: '#255F38' }}
           />
         </View>
-        {queueMessage ? <Text style={styles.queueMessage}>{queueMessage}</Text> : null}
-      </SectionCard>
-
-      <SectionCard eyebrow="One-tap flow" title={status === 'recording' ? 'Tap to stop and identify' : 'Tap to start listening'}>
-        <Text style={styles.helper}>{statusMessage}</Text>
-        <View style={styles.buttonStack}>
-          <PrimaryButton
-            title={status === 'uploading' ? 'Working…' : status === 'recording' ? 'Stop and identify' : 'Start listening'}
-            onPress={() => {
-              handlePrimaryPress().catch(() => undefined)
-            }}
-            disabled={status === 'uploading'}
-          />
-          <PrimaryButton
-            title="Request microphone permission"
-            onPress={() => {
-              requestPermission().catch(() => undefined)
-            }}
-            variant="secondary"
-            disabled={status === 'recording' || status === 'uploading'}
-          />
-        </View>
-      </SectionCard>
-
-      {error ? (
-        <SectionCard eyebrow="Problem" title="Could not continue">
-          <Text style={styles.error}>{error}</Text>
-        </SectionCard>
-      ) : null}
-
-      <SectionCard eyebrow="Field tips" title="Make the first clip count">
-        <Text style={styles.tip}>• Keep clips around 5–15 seconds.</Text>
-        <Text style={styles.tip}>• Point the phone toward the loudest singer.</Text>
-        <Text style={styles.tip}>• Location is opt-in, but it helps a lot when similar species overlap.</Text>
-        <Text style={styles.tip}>• If you lose signal, the retry queue keeps the clip around for another shot.</Text>
-      </SectionCard>
-    </ScrollView>
+      </View>
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  content: {
-    padding: 16,
-    gap: 16,
+  container: {
+    flex: 1,
     backgroundColor: '#F4F7F1',
   },
-  lede: {
-    color: '#3E5345',
-    fontSize: 16,
-    lineHeight: 22,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 4,
   },
-  helper: {
-    color: '#4E6557',
-    fontSize: 15,
-    lineHeight: 21,
+  appTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#102016',
+    letterSpacing: -0.3,
   },
-  error: {
-    color: '#8A2F23',
-    fontSize: 15,
-    lineHeight: 21,
+  headerRight: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
   },
-  queueMessage: {
-    color: '#255F38',
-    fontSize: 14,
-    lineHeight: 20,
+  queueBadge: {
+    backgroundColor: '#E8E0FA',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  queueBadgeText: {
+    color: '#4A2E8A',
+    fontSize: 12,
     fontWeight: '700',
   },
   statusRow: {
     flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 24,
+    paddingTop: 8,
     flexWrap: 'wrap',
-    gap: 10,
   },
-  pill: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+  chip: {
+    backgroundColor: '#E8EFE6',
     borderRadius: 999,
-    backgroundColor: '#EEF3EC',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
-  pillActive: {
-    backgroundColor: '#D4EBD8',
+  chipActive: {
+    backgroundColor: '#C8E6C9',
   },
-  pillProcessing: {
-    backgroundColor: '#F6E1CF',
+  chipText: {
+    fontSize: 13,
+    color: '#1E4E2E',
+    fontWeight: '600',
   },
-  pillQueued: {
-    backgroundColor: '#E8E0FA',
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 20,
   },
-  pillText: {
-    color: '#255F38',
-    fontWeight: '700',
+  buttonWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  buttonStack: {
-    gap: 12,
-    marginTop: 4,
+  pulseRing: {
+    position: 'absolute',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: '#255F38',
   },
-  tip: {
+  recordButton: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: '#255F38',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#255F38',
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 10,
+  },
+  recordButtonActive: {
+    backgroundColor: '#C0392B',
+    shadowColor: '#C0392B',
+  },
+  recordButtonUploading: {
+    backgroundColor: '#8E9E92',
+    shadowColor: '#8E9E92',
+  },
+  recordIcon: {
+    fontSize: 52,
+    color: '#FFFFFF',
+    lineHeight: 58,
+  },
+  buttonLabel: {
+    fontSize: 17,
+    fontWeight: '600',
     color: '#304237',
-    fontSize: 15,
-    lineHeight: 22,
+    letterSpacing: -0.2,
+  },
+  permissionLink: {
+    fontSize: 14,
+    color: '#255F38',
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+  error: {
+    fontSize: 14,
+    color: '#9B2335',
+    textAlign: 'center',
+    paddingHorizontal: 40,
+    lineHeight: 20,
+  },
+  bottom: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 4,
   },
   toggleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 16,
+    paddingVertical: 12,
   },
-  toggleCopy: {
-    flex: 1,
-    gap: 4,
-  },
-  toggleTitle: {
-    color: '#16241C',
+  toggleLabel: {
     fontSize: 16,
-    fontWeight: '700',
-  },
-  toggleHelp: {
-    color: '#4E6557',
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  contextPreview: {
-    color: '#33453A',
-    fontSize: 14,
-    lineHeight: 20,
+    color: '#1C2E22',
+    fontWeight: '500',
   },
   divider: {
-    height: 1,
+    height: StyleSheet.hairlineWidth,
     backgroundColor: '#E3EDE1',
   },
 })

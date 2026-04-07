@@ -7,6 +7,8 @@ export type BirdMetadata = {
   seasonal_status?: string | null
   conservation_status?: string | null
   look_for: string[]
+  description?: string | null
+  image_url?: string | null
 }
 
 export type SpeciesPrediction = {

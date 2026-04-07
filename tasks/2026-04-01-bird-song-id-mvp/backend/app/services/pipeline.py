@@ -3,10 +3,11 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import uuid4
 
+import httpx
 from fastapi import UploadFile
 
 from app.config import get_settings
-from app.schemas import ClipMetadata, IdentifyContext, IdentifyResponse, ResultFlags, ResultSummary
+from app.schemas import BirdMetadata, ClipMetadata, IdentifyContext, IdentifyResponse, ResultFlags, ResultSummary
 from app.services.audio import validate_audio_upload
 from app.services.classifier import get_classifier_provider
 
@@ -27,6 +28,13 @@ class IdentificationPipeline:
         predictions = provider.predict(audio_bytes=audio_bytes, filename=audio.filename or "upload", context=context)
         top_match = predictions[0]
         alternatives = predictions[1:4]
+
+        description, image_url = self._fetch_wikipedia(top_match.common_name, top_match.scientific_name)
+        if description or image_url:
+            base_meta = top_match.metadata or BirdMetadata()
+            top_match = top_match.model_copy(update={
+                "metadata": base_meta.model_copy(update={k: v for k, v in {"description": description, "image_url": image_url}.items() if v})
+            })
 
         advice = [
             "Try a 5–15 second recording with minimal wind noise.",
@@ -71,6 +79,30 @@ class IdentificationPipeline:
                 recorded_on=context.recorded_on,
             ),
         )
+
+    def _fetch_wikipedia(self, common_name: str, scientific_name: str) -> tuple[str | None, str | None]:
+        for query in [scientific_name, common_name]:
+            if not query or query.lower() in ("unknown", "unknown bird"):
+                continue
+            try:
+                title = query.strip().replace(" ", "_")
+                resp = httpx.get(
+                    f"https://en.wikipedia.org/api/rest_v1/page/summary/{title}",
+                    timeout=3.0,
+                    headers={"User-Agent": "BirdsongID/1.0 (bird identification app)"},
+                    follow_redirects=True,
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    extract = (data.get("extract") or "").strip()
+                    image_url = (data.get("thumbnail") or {}).get("source")
+                    if extract:
+                        if len(extract) > 420:
+                            extract = extract[:420].rsplit(" ", 1)[0] + "…"
+                        return extract, image_url
+            except Exception:
+                pass
+        return None, None
 
     def _confidence_band(self, confidence: float) -> str:
         if confidence >= 0.8:

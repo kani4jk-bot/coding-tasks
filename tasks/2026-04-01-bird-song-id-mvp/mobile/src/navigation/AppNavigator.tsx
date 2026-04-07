@@ -17,12 +17,35 @@ function MainTabs() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: '#255F38',
-        tabBarStyle: { height: 68, paddingBottom: 10, paddingTop: 8 },
+        tabBarInactiveTintColor: '#9AA89E',
+        tabBarStyle: {
+          height: 68,
+          paddingBottom: 10,
+          paddingTop: 8,
+          backgroundColor: '#FFFFFF',
+          borderTopColor: '#E8EFE6',
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+        },
       }}
     >
-      <Tabs.Screen name="Listen" component={ListenScreen} options={{ tabBarIcon: () => <Text>🎙️</Text> }} />
-      <Tabs.Screen name="History" component={HistoryScreen} options={{ tabBarIcon: () => <Text>🪶</Text> }} />
-      <Tabs.Screen name="Settings" component={SettingsScreen} options={{ tabBarIcon: () => <Text>⚙️</Text> }} />
+      <Tabs.Screen
+        name="Listen"
+        component={ListenScreen}
+        options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🎙</Text> }}
+      />
+      <Tabs.Screen
+        name="History"
+        component={HistoryScreen}
+        options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🪶</Text> }}
+      />
+      <Tabs.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>⚙️</Text> }}
+      />
     </Tabs.Navigator>
   )
 }
@@ -30,8 +53,19 @@ function MainTabs() {
 export function AppNavigator() {
   return (
     <Stack.Navigator>
-      <Stack.Screen name="MainTabs" component={MainTabs} options={{ title: 'Birdsong ID', headerShown: false }} />
-      <Stack.Screen name="Result" component={ResultScreen} options={{ title: 'Identification result' }} />
+      <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
+      <Stack.Screen
+        name="Result"
+        component={ResultScreen}
+        options={{
+          title: 'Identification',
+          headerBackTitle: 'Back',
+          headerTintColor: '#255F38',
+          headerTitleStyle: { fontWeight: '700', color: '#102016' },
+          headerStyle: { backgroundColor: '#FFFFFF' },
+          headerShadowVisible: false,
+        }}
+      />
     </Stack.Navigator>
   )
 }
