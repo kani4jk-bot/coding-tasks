@@ -54,6 +54,10 @@ export async function removeSighting(id: string) {
   await writeHistory(items.filter((item) => item.id !== id))
 }
 
+export async function clearSightings() {
+  await writeHistory([])
+}
+
 export async function toggleStar(id: string) {
   const items = await readHistory()
   const updated = items.map((item) => (item.id === id ? { ...item, starred: !item.starred } : item))
@@ -61,7 +65,30 @@ export async function toggleStar(id: string) {
   return updated.find((item) => item.id === id) ?? null
 }
 
+export async function saveSightingNotes(id: string, notes: string) {
+  const items = await readHistory()
+  const trimmed = notes.trim()
+  const updated = items.map((item) => (item.id === id ? { ...item, notes: trimmed || undefined } : item))
+  await writeHistory(updated)
+  return updated.find((item) => item.id === id) ?? null
+}
+
 export async function getSavedSighting(id: string) {
   const items = await readHistory()
   return items.find((item) => item.id === id || item.result.request_id === id) ?? null
+}
+
+export async function getHistoryStats() {
+  const items = await listSightings()
+  const starred = items.filter((item) => item.starred).length
+  const noted = items.filter((item) => Boolean(item.notes?.trim())).length
+  const uniqueSpecies = new Set(items.map((item) => item.result.top_match.species_code)).size
+
+  return {
+    total: items.length,
+    starred,
+    noted,
+    uniqueSpecies,
+    latestSavedAt: items[0]?.savedAt ?? null,
+  }
 }

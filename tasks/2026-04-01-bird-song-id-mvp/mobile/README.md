@@ -8,13 +8,15 @@ This folder adds the Phase 2 native direction without touching the existing web 
 - bottom-tab navigation
 - phone-first listen screen shell
 - result screen shell
-- placeholder history/settings tabs
+- history/settings tabs promoted into a local field journal experience
 - backend API client contract mirroring the FastAPI response
 - native microphone permission request
 - optional native location capture before upload
 - device-date capture before upload
 - one-tap record → stop → upload → identify flow
 - live result handoff from backend response to the Result screen
+- editable field notes for saved sightings
+- local delete/clear controls and simple on-device history stats
 
 ## Current behavior
 

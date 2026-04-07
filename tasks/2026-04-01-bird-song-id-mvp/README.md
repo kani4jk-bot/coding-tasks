@@ -57,14 +57,14 @@ This is a realistic MVP rather than vaporware:
 - Request metadata in API responses (`request_id`, `received_at`, `clip`)
 - Native Expo app with real record → upload → result flow
 - Native location opt-in + device-date capture wired into upload context
-- Native local history tab with starred saved sightings
-- Native result screen with confidence band, summary, and metadata sections
+- Native local history tab with starred saved sightings, notes, deletion, and device stats
+- Native result screen with confidence band, summary, metadata, and editable field notes
 
 ### Honest limitations / still scaffolded
 
 - BirdNET now has a verified local runtime path on this host via `tensorflow-cpu==2.16.1`, but it is still a heavier dependency than mock mode
 - First-run BirdNET model loading may be slow/heavy
-- Native history is **local only** for now; there is no backend account sync yet
+- Native history is **local only** for now; notes/stars/deletes all persist on-device, but there is no backend account sync yet
 - Species metadata is currently **groundwork**: rich for mock/demo species, sparse for raw BirdNET detections
 - No spectrogram preview yet
 - No offline on-device identification in the browser or native app

@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 
 import { SectionCard } from '../components/SectionCard'
-import { listSightings, toggleStar } from '../lib/history'
+import { listSightings, removeSighting, toggleStar } from '../lib/history'
 import type { RootStackParamList, SavedSighting } from '../types'
 
 export function HistoryScreen() {
@@ -27,7 +27,7 @@ export function HistoryScreen() {
     <ScrollView contentContainerStyle={styles.content}>
       <SectionCard eyebrow="Field notebook" title="Recent identifications">
         <Text style={styles.copy}>
-          Every successful identification is saved on-device. Star the ones you want to keep as your standout sightings.
+          Every successful identification is saved on-device. Add notes, star the best ones, and prune the clips that were just background chaos.
         </Text>
       </SectionCard>
 
@@ -40,6 +40,10 @@ export function HistoryScreen() {
               onOpen={() => navigation.navigate('Result', { result: item.result })}
               onToggleStar={async () => {
                 await toggleStar(item.id)
+                await refresh()
+              }}
+              onDelete={async () => {
+                await removeSighting(item.id)
                 await refresh()
               }}
             />
@@ -58,6 +62,10 @@ export function HistoryScreen() {
                 await toggleStar(item.id)
                 await refresh()
               }}
+              onDelete={async () => {
+                await removeSighting(item.id)
+                await refresh()
+              }}
             />
           ))
         ) : (
@@ -68,7 +76,17 @@ export function HistoryScreen() {
   )
 }
 
-function HistoryRow({ item, onOpen, onToggleStar }: { item: SavedSighting; onOpen: () => void; onToggleStar: () => void }) {
+function HistoryRow({
+  item,
+  onOpen,
+  onToggleStar,
+  onDelete,
+}: {
+  item: SavedSighting
+  onOpen: () => void
+  onToggleStar: () => void
+  onDelete: () => void
+}) {
   return (
     <Pressable style={styles.row} onPress={onOpen}>
       <View style={styles.rowCopy}>
@@ -77,10 +95,24 @@ function HistoryRow({ item, onOpen, onToggleStar }: { item: SavedSighting; onOpe
           {Math.round(item.result.top_match.confidence * 100)}% • {new Date(item.savedAt).toLocaleDateString()}
         </Text>
         <Text style={styles.rowMeta}>{item.result.summary.short_description}</Text>
+        {item.notes ? <Text style={styles.notePreview}>📝 {item.notes}</Text> : null}
       </View>
-      <Pressable style={styles.starButton} onPress={onToggleStar}>
-        <Text style={styles.starText}>{item.starred ? '★' : '☆'}</Text>
-      </Pressable>
+      <View style={styles.actions}>
+        <Pressable style={styles.actionButton} onPress={onToggleStar}>
+          <Text style={styles.starText}>{item.starred ? '★' : '☆'}</Text>
+        </Pressable>
+        <Pressable
+          style={styles.actionButton}
+          onPress={() => {
+            Alert.alert('Delete sighting?', 'This removes the saved result and any notes from this device.', [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Delete', style: 'destructive', onPress: onDelete },
+            ])
+          }}
+        >
+          <Text style={styles.deleteText}>✕</Text>
+        </Pressable>
+      </View>
     </Pressable>
   )
 }
@@ -124,12 +156,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 19,
   },
-  starButton: {
+  notePreview: {
+    color: '#5A4A1B',
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  actions: {
+    gap: 4,
+    alignItems: 'center',
+  },
+  actionButton: {
     paddingHorizontal: 8,
     paddingVertical: 6,
   },
   starText: {
     fontSize: 24,
     color: '#C06B2D',
+  },
+  deleteText: {
+    fontSize: 20,
+    color: '#A35245',
+    fontWeight: '700',
   },
 })

@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 
+import { PrimaryButton } from '../components/PrimaryButton'
 import { SectionCard } from '../components/SectionCard'
-import { getSavedSighting, toggleStar, upsertSighting } from '../lib/history'
+import { getSavedSighting, removeSighting, saveSightingNotes, toggleStar, upsertSighting } from '../lib/history'
 import type { RootStackParamList } from '../types'
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Result'>
@@ -16,15 +17,20 @@ function ConfidenceBar({ value }: { value: number }) {
   )
 }
 
-export function ResultScreen({ route }: Props) {
+export function ResultScreen({ route, navigation }: Props) {
   const { result } = route.params
   const [starred, setStarred] = useState(false)
+  const [notes, setNotes] = useState('')
+  const [savedMessage, setSavedMessage] = useState('')
   const hasAlternatives = result.alternatives.length > 0
   const hasAdvice = result.advice.length > 0
 
   useEffect(() => {
     getSavedSighting(result.request_id)
-      .then((saved) => setStarred(Boolean(saved?.starred)))
+      .then((saved) => {
+        setStarred(Boolean(saved?.starred))
+        setNotes(saved?.notes ?? '')
+      })
       .catch(() => undefined)
   }, [result.request_id])
 
@@ -37,14 +43,28 @@ export function ResultScreen({ route }: Props) {
   const handleToggleSave = useCallback(async () => {
     const existing = await getSavedSighting(result.request_id)
     if (!existing) {
-      const created = await upsertSighting(result, { starred: true })
+      const created = await upsertSighting(result, { starred: true, notes })
       setStarred(created.starred)
+      setSavedMessage('Saved to history.')
       return
     }
 
     const updated = await toggleStar(existing.id)
     setStarred(Boolean(updated?.starred))
-  }, [result])
+    setSavedMessage(updated?.starred ? 'Starred in history.' : 'Removed from starred sightings.')
+  }, [notes, result])
+
+  const handleSaveNotes = useCallback(async () => {
+    const existing = await getSavedSighting(result.request_id)
+    if (!existing) {
+      await upsertSighting(result, { notes })
+      setSavedMessage('Notes saved and result added to history.')
+      return
+    }
+
+    await saveSightingNotes(existing.id, notes)
+    setSavedMessage(notes.trim() ? 'Notes updated.' : 'Notes cleared.')
+  }, [notes, result])
 
   const metadata = result.top_match.metadata
 
@@ -64,6 +84,34 @@ export function ResultScreen({ route }: Props) {
         <Text style={styles.confidence}>{Math.round(result.top_match.confidence * 100)}% confidence</Text>
         <Text style={styles.reason}>{result.top_match.reason}</Text>
         <Text style={styles.summary}>{result.summary.short_description}</Text>
+      </SectionCard>
+
+      <SectionCard eyebrow="Field journal" title="Add your own notes">
+        <Text style={styles.helper}>Jot down habitat, behavior, weather, or why you think the model nailed it — or didn’t.</Text>
+        <TextInput
+          value={notes}
+          onChangeText={(value) => {
+            setNotes(value)
+            if (savedMessage) setSavedMessage('')
+          }}
+          placeholder="Heard near creek edge, two short chirps, windy background…"
+          placeholderTextColor="#8A9A90"
+          multiline
+          textAlignVertical="top"
+          style={styles.notesInput}
+        />
+        <View style={styles.buttonStack}>
+          <PrimaryButton title="Save notes" onPress={() => { handleSaveNotes().catch(() => undefined) }} />
+          <PrimaryButton
+            title="Clear notes"
+            onPress={() => {
+              setNotes('')
+              setSavedMessage('')
+            }}
+            variant="secondary"
+          />
+        </View>
+        {savedMessage ? <Text style={styles.savedMessage}>{savedMessage}</Text> : null}
       </SectionCard>
 
       {metadata ? (
@@ -107,6 +155,28 @@ export function ResultScreen({ route }: Props) {
 
       <SectionCard eyebrow="Advice" title="How to improve the next try">
         {hasAdvice ? result.advice.map((line) => <Text key={line} style={styles.tip}>• {line}</Text>) : <Text style={styles.empty}>No extra advice from the backend for this clip.</Text>}
+      </SectionCard>
+
+      <SectionCard eyebrow="Cleanup" title="Manage this saved result">
+        <Text style={styles.helper}>Delete this sighting if it was a bad clip, wind, or an obvious false positive.</Text>
+        <PrimaryButton
+          title="Delete saved sighting"
+          variant="secondary"
+          onPress={() => {
+            Alert.alert('Delete sighting?', 'This removes the saved result and any field notes from this device.', [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Delete',
+                style: 'destructive',
+                onPress: () => {
+                  removeSighting(result.request_id)
+                    .then(() => navigation.goBack())
+                    .catch(() => undefined)
+                },
+              },
+            ])
+          }}
+        />
       </SectionCard>
     </ScrollView>
   )
@@ -172,6 +242,31 @@ const styles = StyleSheet.create({
     color: '#4E6557',
     fontSize: 15,
     lineHeight: 21,
+  },
+  helper: {
+    color: '#4E6557',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  notesInput: {
+    minHeight: 120,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#DCE6D8',
+    backgroundColor: '#FAFCF8',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    color: '#16241C',
+    fontSize: 15,
+    lineHeight: 21,
+  },
+  buttonStack: {
+    gap: 10,
+  },
+  savedMessage: {
+    color: '#255F38',
+    fontWeight: '700',
+    fontSize: 14,
   },
   empty: {
     color: '#5B7162',
