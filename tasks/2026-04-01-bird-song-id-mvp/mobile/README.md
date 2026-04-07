@@ -10,13 +10,15 @@ This folder adds the Phase 2 native direction without touching the existing web 
 - result screen shell
 - placeholder history/settings tabs
 - backend API client contract mirroring the FastAPI response
+- native microphone permission request
+- one-tap record → stop → upload → identify flow
+- live result handoff from backend response to the Result screen
 
-## Not wired yet
+## Current behavior
 
-- real microphone recording
-- actual file picker flow
-- live upload to backend from UI buttons
-- persistence/history sync
+- First tap requests mic permission if needed and starts a real recording.
+- Second tap stops recording, uploads the clip to `/api/identify`, and opens the Result screen with the real API response.
+- Errors stay on the Listen screen so the flow fails honestly.
 
 ## Run
 

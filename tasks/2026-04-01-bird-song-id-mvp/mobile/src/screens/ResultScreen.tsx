@@ -16,6 +16,8 @@ function ConfidenceBar({ value }: { value: number }) {
 
 export function ResultScreen({ route }: Props) {
   const { result } = route.params
+  const hasAlternatives = result.alternatives.length > 0
+  const hasAdvice = result.advice.length > 0
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -27,27 +29,33 @@ export function ResultScreen({ route }: Props) {
       </SectionCard>
 
       <SectionCard eyebrow="Alternatives" title="Also worth checking">
-        {result.alternatives.map((item) => (
-          <View key={item.species_code} style={styles.altRow}>
-            <View style={styles.altCopy}>
-              <Text style={styles.altTitle}>{item.common_name}</Text>
-              <Text style={styles.altSubtitle}>{item.scientific_name}</Text>
+        {hasAlternatives ? (
+          result.alternatives.map((item) => (
+            <View key={item.species_code} style={styles.altRow}>
+              <View style={styles.altCopy}>
+                <Text style={styles.altTitle}>{item.common_name}</Text>
+                <Text style={styles.altSubtitle}>{item.scientific_name}</Text>
+              </View>
+              <Text style={styles.altConfidence}>{Math.round(item.confidence * 100)}%</Text>
             </View>
-            <Text style={styles.altConfidence}>{Math.round(item.confidence * 100)}%</Text>
-          </View>
-        ))}
+          ))
+        ) : (
+          <Text style={styles.empty}>No alternative matches came back for this clip.</Text>
+        )}
       </SectionCard>
 
       <SectionCard eyebrow="Clip" title={result.clip.filename}>
         <Text style={styles.meta}>Provider: {result.provider}</Text>
         <Text style={styles.meta}>Size: {(result.clip.file_size_bytes / 1024 / 1024).toFixed(1)} MB</Text>
         <Text style={styles.meta}>Request: {result.request_id}</Text>
+        {result.clip.latitude != null && result.clip.longitude != null ? (
+          <Text style={styles.meta}>Location: {result.clip.latitude.toFixed(4)}, {result.clip.longitude.toFixed(4)}</Text>
+        ) : null}
+        {result.clip.recorded_on ? <Text style={styles.meta}>Recorded on: {result.clip.recorded_on}</Text> : null}
       </SectionCard>
 
       <SectionCard eyebrow="Advice" title="How to improve the next try">
-        {result.advice.map((line) => (
-          <Text key={line} style={styles.tip}>• {line}</Text>
-        ))}
+        {hasAdvice ? result.advice.map((line) => <Text key={line} style={styles.tip}>• {line}</Text>) : <Text style={styles.empty}>No extra advice from the backend for this clip.</Text>}
       </SectionCard>
     </ScrollView>
   )
@@ -71,6 +79,11 @@ const styles = StyleSheet.create({
   },
   reason: {
     color: '#33453A',
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  empty: {
+    color: '#5B7162',
     fontSize: 15,
     lineHeight: 22,
   },

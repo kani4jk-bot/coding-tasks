@@ -8,10 +8,14 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.kani.birdsongid"
+      "bundleIdentifier": "com.kani.birdsongid",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Birdsong ID records short clips so it can identify birds from their songs."
+      }
     },
     "android": {
-      "package": "com.kani.birdsongid"
+      "package": "com.kani.birdsongid",
+      "permissions": ["android.permission.RECORD_AUDIO"]
     }
   }
 }

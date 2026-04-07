@@ -33,3 +33,5 @@ export type MainTabParamList = {
   History: undefined
   Settings: undefined
 }
+
+export type RecordingPermissionState = 'undetermined' | 'granted' | 'denied'

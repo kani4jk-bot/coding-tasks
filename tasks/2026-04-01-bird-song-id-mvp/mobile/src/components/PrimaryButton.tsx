@@ -4,11 +4,20 @@ type PrimaryButtonProps = {
   title: string
   onPress: () => void
   variant?: 'primary' | 'secondary'
+  disabled?: boolean
 }
 
-export function PrimaryButton({ title, onPress, variant = 'primary' }: PrimaryButtonProps) {
+export function PrimaryButton({ title, onPress, variant = 'primary', disabled = false }: PrimaryButtonProps) {
   return (
-    <Pressable onPress={onPress} style={[styles.button, variant === 'secondary' ? styles.secondary : styles.primary]}>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={[
+        styles.button,
+        variant === 'secondary' ? styles.secondary : styles.primary,
+        disabled && styles.disabled,
+      ]}
+    >
       <Text style={[styles.text, variant === 'secondary' ? styles.secondaryText : styles.primaryText]}>{title}</Text>
     </Pressable>
   )
@@ -26,6 +35,9 @@ const styles = StyleSheet.create({
   },
   secondary: {
     backgroundColor: '#E8F0E7',
+  },
+  disabled: {
+    opacity: 0.55,
   },
   text: {
     fontSize: 16,

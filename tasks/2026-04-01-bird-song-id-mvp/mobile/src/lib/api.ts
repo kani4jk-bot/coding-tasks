@@ -2,11 +2,13 @@ import type { IdentifyResponse } from '../types'
 
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE ?? 'http://localhost:8000'
 
-export async function identifyBirdClip(file: {
+type NativeClipFile = {
   uri: string
   name: string
   mimeType?: string
-}): Promise<IdentifyResponse> {
+}
+
+export async function identifyBirdClip(file: NativeClipFile): Promise<IdentifyResponse> {
   const formData = new FormData()
   formData.append('audio', {
     uri: file.uri,
