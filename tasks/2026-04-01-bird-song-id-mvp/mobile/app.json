@@ -2,21 +2,42 @@
   "expo": {
     "name": "Birdsong ID",
     "slug": "birdsong-id",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F4F7F1"
+    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.kani.birdsongid",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "Birdsong ID records short clips so it can identify birds from their songs.",
-        "NSLocationWhenInUseUsageDescription": "Birdsong ID can attach your current location to improve bird identification when you opt in."
+        "NSMicrophoneUsageDescription": "Birdsong ID records short audio clips to identify birds by their songs.",
+        "NSLocationWhenInUseUsageDescription": "Your location helps Birdsong ID narrow down which species are likely in your area.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.kani.birdsongid",
-      "permissions": ["android.permission.RECORD_AUDIO", "android.permission.ACCESS_COARSE_LOCATION", "android.permission.ACCESS_FINE_LOCATION"]
-    }
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
+    },
+    "extra": {
+      "eas": {
+        "projectId": "60b2403f-d9ca-4ddc-a28a-ca26bdb0b56b"
+      }
+    },
+    "owner": "camputy"
   }
 }
