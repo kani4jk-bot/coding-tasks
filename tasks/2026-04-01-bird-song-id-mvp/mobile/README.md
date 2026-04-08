@@ -11,7 +11,7 @@ This folder adds the Phase 2 native direction without touching the existing web 
 - history/settings tabs promoted into a local field journal experience
 - backend API client contract mirroring the FastAPI response
 - native microphone permission request
-- optional native location capture before upload
+- optional native approximate-location capture before upload
 - device-date capture before upload
 - one-tap record → stop → upload → identify flow
 - live result handoff from backend response to the Result screen
@@ -23,7 +23,7 @@ This folder adds the Phase 2 native direction without touching the existing web 
 ## Current behavior
 
 - First tap requests mic permission if needed and starts a real recording.
-- Location is an explicit opt-in. When enabled, the app asks for foreground permission and grabs a fresh fix right before upload.
+- Approximate location is an explicit opt-in. When enabled, the app asks for foreground permission, requests coarse location, and snaps the fresh fix into an approximately 3 km² region before upload.
 - Device date is attached by default and can be toggled off.
 - Second tap stops recording, uploads the clip plus any opted-in context to `/api/identify`, and opens the Result screen with the real API response.
 - If upload fails after the recording is captured, the app copies that clip into app storage and adds it to a retry queue instead of just dropping it.
