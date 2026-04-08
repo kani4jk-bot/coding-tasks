@@ -1,0 +1,179 @@
+:root {
+  color-scheme: light;
+  --bg: #f4f7f1;
+  --surface: #ffffff;
+  --surface-soft: #f8fbf5;
+  --text: #132117;
+  --muted: #56705d;
+  --line: #dce6d8;
+  --brand: #255f38;
+  --brand-soft: #e5f1e8;
+  --accent: #c06b2d;
+  --shadow: 0 16px 40px rgba(16, 32, 22, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: linear-gradient(180deg, #f7faf4 0%, var(--bg) 100%);
+  color: var(--text);
+}
+
+.page-shell {
+  width: min(100%, 920px);
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+}
+
+.hero {
+  padding: 24px;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: var(--brand);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.82rem;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 12px;
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  line-height: 0.98;
+}
+
+h2 {
+  margin-bottom: 14px;
+  font-size: 1.4rem;
+}
+
+h3 {
+  margin-top: 28px;
+  margin-bottom: 10px;
+  font-size: 1.1rem;
+}
+
+h4 {
+  margin-top: 18px;
+  margin-bottom: 8px;
+  color: var(--brand);
+  font-size: 1rem;
+}
+
+p,
+li {
+  color: var(--text);
+  line-height: 1.65;
+}
+
+.lede {
+  font-size: 1.06rem;
+  color: var(--muted);
+  max-width: 60ch;
+}
+
+.hero-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0 10px;
+}
+
+.hero-pills span,
+.callout {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.hero-pills span {
+  padding: 10px 14px;
+  color: var(--brand);
+  font-weight: 700;
+  font-size: 0.94rem;
+}
+
+.updated,
+.small,
+.muted {
+  color: var(--muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.summary-card,
+.contact-card,
+.prose {
+  padding: 22px;
+}
+
+.check-list {
+  padding-left: 20px;
+  margin: 0;
+}
+
+.callout {
+  padding: 16px 18px;
+  border-radius: 18px;
+  margin: 14px 0;
+}
+
+.callout strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--brand);
+}
+
+.prose ul {
+  padding-left: 20px;
+}
+
+.prose li + li {
+  margin-top: 8px;
+}
+
+@media (min-width: 760px) {
+  .page-shell {
+    padding: 40px 24px 60px;
+  }
+
+  .grid {
+    grid-template-columns: 1.2fr 0.8fr;
+  }
+
+  .hero,
+  .summary-card,
+  .contact-card,
+  .prose {
+    padding: 30px;
+  }
+}

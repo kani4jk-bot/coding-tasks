@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Birdsong ID Privacy</title>
+    <meta
+      name="description"
+      content="Privacy policy for the current Birdsong ID MVP: audio upload for identification, optional coarse location, local-only history and notes, and no account sync yet."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="hero card">
+        <p class="eyebrow">Birdsong ID</p>
+        <h1>Privacy Policy</h1>
+        <p class="lede">
+          A plain-language policy for the current MVP. It reflects how the app works today: you submit a bird sound clip for
+          identification, location is optional, saved history stays on-device, and there is no account sync yet.
+        </p>
+        <div class="hero-pills">
+          <span>Audio upload for identification</span>
+          <span>Optional coarse location</span>
+          <span>Local-only history & notes</span>
+          <span>No account sync yet</span>
+        </div>
+        <p class="updated">Last updated: 2026-04-08</p>
+      </section>
+
+      <section class="grid">
+        <article class="card summary-card">
+          <h2>Quick summary</h2>
+          <ul class="check-list">
+            <li>You can record or upload a bird clip and send it to the backend for identification.</li>
+            <li>Location is optional.</li>
+            <li>The native app currently sends an approximate region instead of a precise pin.</li>
+            <li>Saved history, starred sightings, and notes are stored locally on your device.</li>
+            <li>There is no account system or cloud sync for your saved history yet.</li>
+          </ul>
+        </article>
+
+        <article class="card contact-card">
+          <h2>Before publishing</h2>
+          <p>
+            Replace the contact details below before using this page in an App Store or Play Store listing.
+          </p>
+          <div class="callout">
+            <strong>Support / privacy contact</strong>
+            <p>support@example.com</p>
+          </div>
+          <p class="small muted">
+            Also review backend hosting and log retention details before making any stronger retention or security claims.
+          </p>
+        </article>
+      </section>
+
+      <section class="card prose">
+        <h2>Full policy</h2>
+
+        <h3>1. Information the app currently handles</h3>
+        <h4>Audio you choose to submit</h4>
+        <p>
+          When you record a clip or upload an audio file for identification, the app sends that audio to the backend API so the
+          bird-identification service can analyze it. This can include the audio itself, file name, file type, file size, and
+          request metadata.
+        </p>
+
+        <h4>Optional location context</h4>
+        <p>
+          You can choose whether to attach location context. In the web app, location can be entered manually or requested from the
+          browser. In the native app, location is opt-in and currently converted to an approximate region of about 3 km² before
+          upload instead of sending a precise pin.
+        </p>
+
+        <h4>Optional date context</h4>
+        <p>
+          The app may send a recording date to help narrow likely species. In the web app this is optional. In the native app, the
+          device date is on by default but can be turned off.
+        </p>
+
+        <h4>Local history and notes</h4>
+        <p>
+          The native app stores successful identification results, saved/starred sightings, notes you add, and retry-queue items
+          locally on your device. This local history is device-only right now.
+        </p>
+
+        <h3>2. What the app does not currently do</h3>
+        <ul>
+          <li>No user accounts</li>
+          <li>No cloud sync of saved sightings or notes</li>
+          <li>No cross-device history sync</li>
+          <li>No always-on listening or background audio surveillance</li>
+          <li>No precise live location tracking in the native app</li>
+        </ul>
+
+        <h3>3. How information is used</h3>
+        <ul>
+          <li>To process bird-identification requests</li>
+          <li>To improve matching with optional context like approximate location and date</li>
+          <li>To return results in the app</li>
+          <li>To keep local history, notes, and retry items on your device</li>
+          <li>To support basic operational debugging when requests fail</li>
+        </ul>
+
+        <h3>4. Storage and retention</h3>
+        <p>
+          On your device, local history, notes, stars, and queued retry clips stay there until you delete them or clear app data.
+          Audio and request data are also sent to the backend for processing. Because this is an MVP, this page avoids making strong
+          retention promises that have not been verified yet. Before publishing, confirm and document the real backend hosting,
+          logging, and retention setup.
+        </p>
+
+        <h3>5. Permissions</h3>
+        <ul>
+          <li>Microphone access, to record a bird clip</li>
+          <li>Location access, only if you choose to attach location context</li>
+        </ul>
+        <p>If you do not grant location access, the app can still work without location context.</p>
+
+        <h3>6. Your choices</h3>
+        <ul>
+          <li>Choose whether to upload a clip for identification</li>
+          <li>Choose whether to attach location context</li>
+          <li>Turn date context off in the native app</li>
+          <li>Delete saved sightings and notes from the device</li>
+          <li>Clear local history and retry-queue items from the device</li>
+        </ul>
+
+        <h3>7. Changes</h3>
+        <p>
+          If the app later adds accounts, sync, analytics, crash reporting, or new service providers, this policy should be updated
+          before or when those features ship.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>
