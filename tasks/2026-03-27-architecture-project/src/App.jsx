@@ -89,9 +89,24 @@ const getCanvasPoint = (event, canvas) => {
   };
 };
 
-const BeforeAfterCompare = ({ beforeImage, afterImage, compareValue, onCompareChange }) => (
+const compressImage = (dataUrl, maxDimension = 1920) =>
+  new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxDimension / Math.max(img.naturalWidth, img.naturalHeight));
+      if (scale >= 1) { resolve(dataUrl); return; }
+      const offscreen = document.createElement('canvas');
+      offscreen.width = Math.round(img.naturalWidth * scale);
+      offscreen.height = Math.round(img.naturalHeight * scale);
+      offscreen.getContext('2d').drawImage(img, 0, 0, offscreen.width, offscreen.height);
+      resolve(offscreen.toDataURL('image/jpeg', 0.88));
+    };
+    img.src = dataUrl;
+  });
+
+const BeforeAfterCompare = ({ beforeImage, afterImage, compareValue, onCompareChange, aspect }) => (
   <div className="before-after-shell">
-    <div className="before-after-stage" style={{ '--compare-position': `${compareValue}%` }}>
+    <div className="before-after-stage" style={{ '--compare-position': `${compareValue}%`, aspectRatio: aspect || 'auto' }}>
       <img src={beforeImage} alt="Original room" className="compare-image base-image" draggable="false" />
       <div className="compare-overlay" aria-hidden="true">
         <img src={afterImage} alt="" className="compare-image" draggable="false" />
@@ -126,6 +141,7 @@ const HomeVisualizationApp = () => {
   const fileInputRef = useRef(null);
 
   const [image, setImage] = useState(null);
+  const [imageAspect, setImageAspect] = useState(null);
   const [editedImage, setEditedImage] = useState(null);
   const [points, setPoints] = useState([]);
   const [selectionIntent, setSelectionIntent] = useState('foreground');
@@ -210,22 +226,15 @@ const HomeVisualizationApp = () => {
     if (!canvas || !image) return;
 
     const ctx = canvas.getContext('2d');
-    const baseImg = new Image();
-
-    baseImg.onload = () => {
-      canvas.width = baseImg.width;
-      canvas.height = baseImg.height;
-
-      const displayImg = new Image();
-      displayImg.onload = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(displayImg, 0, 0);
-        drawOverlays(ctx);
-      };
-      displayImg.src = image;
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      drawOverlays(ctx);
     };
-
-    baseImg.src = image;
+    img.src = image;
   }, [drawOverlays, image]);
 
   useEffect(() => {
@@ -246,6 +255,7 @@ const HomeVisualizationApp = () => {
 
   const resetAll = () => {
     setImage(null);
+    setImageAspect(null);
     setEditedImage(null);
     setModification('');
     setCompareValue(50);
@@ -271,7 +281,7 @@ const HomeVisualizationApp = () => {
     const fileName = file.name.toLowerCase();
     const isHEIC = fileName.endsWith('.heic') || fileName.endsWith('.heif') || fileType.includes('heic') || fileType.includes('heif');
     if (isHEIC) {
-      setError('HEIC is not supported yet. Please export the photo as JPG or PNG first.');
+      setError('HEIC format is not supported. In Photos, share the image and choose "Export as JPEG", then upload that file.');
       event.target.value = '';
       setIsUploading(false);
       return;
@@ -288,6 +298,7 @@ const HomeVisualizationApp = () => {
     reader.onload = (loadEvent) => {
       const img = new Image();
       img.onload = () => {
+        setImageAspect(img.naturalWidth / img.naturalHeight);
         setImage(loadEvent.target?.result);
         setEditedImage(null);
         setModification('');
@@ -388,28 +399,30 @@ const HomeVisualizationApp = () => {
     }
 
     setIsProcessing(true);
-    setProgressValue(15);
+    setProgressValue(10);
     setProcessingStage(PROCESS_STEPS[0]);
     setError(null);
 
-    const requestData = {
-      image,
-      mode,
-      modification: modification.trim(),
-      points,
-      box: mode === 'box' ? { start: boxStart, end: boxEnd } : null,
-    };
-
     try {
+      const compressedImage = await compressImage(image);
+
+      setProcessingStage(PROCESS_STEPS[1]);
+      setProgressValue(30);
+
+      const requestData = {
+        image: compressedImage,
+        mode,
+        modification: modification.trim(),
+        points,
+        box: mode === 'box' ? { start: boxStart, end: boxEnd } : null,
+      };
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 300000);
       const apiBase = import.meta.env.VITE_API_BASE || '';
 
-      setProcessingStage(PROCESS_STEPS[1]);
-      setProgressValue(35);
-
       setProcessingStage(PROCESS_STEPS[2]);
-      setProgressValue(60);
+      setProgressValue(55);
       const response = await fetch(`${apiBase}/api/edit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -461,8 +474,9 @@ const HomeVisualizationApp = () => {
   };
 
   const stepState = (index) => {
-    const currentIndex = PROCESS_STEPS.findIndex((step) => step === processingStage);
     if (!isProcessing && progressValue === 100) return 'done';
+    const currentIndex = PROCESS_STEPS.findIndex((step) => step === processingStage);
+    if (currentIndex === -1) return 'todo';
     if (currentIndex > index) return 'done';
     if (currentIndex === index) return 'active';
     return 'todo';
@@ -470,6 +484,9 @@ const HomeVisualizationApp = () => {
 
   return (
     <div className="app-shell">
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {isProcessing ? processingStage : error || ''}
+      </div>
       {error && <ErrorBanner message={error} onClose={() => setError(null)} />}
       {isUploading && <LoadingToast label="Importing your image…" />}
 
@@ -478,7 +495,7 @@ const HomeVisualizationApp = () => {
           <Home size={20} />
         </div>
         <div>
-          <p className="eyebrow">Mobile-first editor</p>
+          <p className="eyebrow">AI Design Studio</p>
           <h1>Home Visualizer AI</h1>
         </div>
       </header>
@@ -514,6 +531,7 @@ const HomeVisualizationApp = () => {
                 afterImage={editedImage}
                 compareValue={compareValue}
                 onCompareChange={setCompareValue}
+                aspect={imageAspect}
               />
             ) : (
               <canvas
@@ -634,7 +652,7 @@ const HomeVisualizationApp = () => {
                     Exclude area
                   </button>
                 </div>
-                <p className="helper-text">On phones, tap the canvas after choosing Include or Exclude. On desktop, right-click still works for exclude points.</p>
+                <p className="helper-text">Tap the canvas after choosing Include or Exclude to place a selection point.</p>
               </>
             )}
 
@@ -704,6 +722,18 @@ const HomeVisualizationApp = () => {
           </section>
         </aside>
       </main>
+      <div className="mobile-generate-bar" role="region" aria-label="Generate action">
+        <button
+          type="button"
+          className="primary-button"
+          onClick={processImage}
+          disabled={isProcessing || !image}
+          aria-busy={isProcessing}
+        >
+          {isProcessing ? <Loader2 size={18} className="spin" /> : <Wand2 size={18} />}
+          {isProcessing ? (processingStage || 'Generating…') : resultReady ? 'Generate another' : 'Generate'}
+        </button>
+      </div>
     </div>
   );
 };
