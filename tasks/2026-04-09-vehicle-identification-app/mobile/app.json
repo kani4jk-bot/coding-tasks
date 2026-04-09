@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "VehicleID",
+    "slug": "vehicle-id",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0D1B2A"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.yourcompany.vehicleid",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Camera is used to photograph vehicles for identification.",
+        "NSPhotoLibraryUsageDescription": "Photo library access lets you pick an existing vehicle photo."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#0D1B2A"
+      },
+      "package": "com.yourcompany.vehicleid",
+      "permissions": ["android.permission.CAMERA", "android.permission.READ_EXTERNAL_STORAGE"]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Camera is used to photograph vehicles for identification."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Photo library access lets you pick an existing vehicle photo."
+        }
+      ]
+    ]
+  }
+}
