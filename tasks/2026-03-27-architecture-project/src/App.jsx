@@ -145,7 +145,7 @@ const HomeVisualizationApp = () => {
   const [editedImage, setEditedImage] = useState(null);
   const [points, setPoints] = useState([]);
   const [selectionIntent, setSelectionIntent] = useState('foreground');
-  const [mode, setMode] = useState('point');
+  const [mode, setMode] = useState('box');
   const [compareValue, setCompareValue] = useState(50);
   const [modification, setModification] = useState('');
   const [boxStart, setBoxStart] = useState(null);
@@ -607,7 +607,7 @@ const HomeVisualizationApp = () => {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+              accept="image/*"
               onChange={handleImageUpload}
               className="hidden-input"
             />
