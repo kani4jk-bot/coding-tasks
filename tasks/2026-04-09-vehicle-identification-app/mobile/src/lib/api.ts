@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { IdentifyResponse } from '../types'
 
-const DEFAULT_BASE = 'http://localhost:8000'
+const DEFAULT_BASE = 'https://vehicle-id-backend-production.up.railway.app'
 const API_BASE_KEY = '@vehicle_id/api_base'
 
 export async function getApiBase(): Promise<string> {

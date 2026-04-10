@@ -27,9 +27,17 @@ export default function App() {
     }
   }
 
+  const handleReset = () => {
+    if (preview) URL.revokeObjectURL(preview)
+    setPreview(null)
+    setResult(null)
+    setError(null)
+  }
+
   return (
     <main className="app-shell">
       <header className="app-header">
+        <span className="app-header-icon">🌿</span>
         <h1>Plant ID</h1>
         <p>Snap a photo to identify any plant and discover its story</p>
       </header>
@@ -57,6 +65,12 @@ export default function App() {
       )}
 
       {result && <ResultCard result={result} />}
+
+      {result && (
+        <button className="btn-action" onClick={handleReset}>
+          Try another plant →
+        </button>
+      )}
 
       {!preview && !loading && (
         <section className="card hints-card">

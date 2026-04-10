@@ -15,7 +15,6 @@ function MainTabs() {
   return (
     <Tabs.Navigator
       screenOptions={{
-        headerShown: false,
         tabBarActiveTintColor: '#1A3C6B',
         tabBarInactiveTintColor: '#9AAABF',
         tabBarStyle: {
@@ -29,22 +28,36 @@ function MainTabs() {
           fontSize: 11,
           fontWeight: '600',
         },
+        headerStyle: { backgroundColor: '#FFFFFF' },
+        headerShadowVisible: false,
+        headerTitleStyle: { fontWeight: '800', color: '#0D1B2A', fontSize: 18 },
+        headerTintColor: '#1A3C6B',
       }}
     >
       <Tabs.Screen
         name="Capture"
         component={CaptureScreen}
-        options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>📷</Text> }}
+        options={{
+          title: 'Vehicle ID',
+          tabBarLabel: 'Capture',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>📷</Text>,
+        }}
       />
       <Tabs.Screen
         name="History"
         component={HistoryScreen}
-        options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🚗</Text> }}
+        options={{
+          title: 'History',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🚗</Text>,
+        }}
       />
       <Tabs.Screen
         name="Settings"
         component={SettingsScreen}
-        options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>⚙️</Text> }}
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>⚙️</Text>,
+        }}
       />
     </Tabs.Navigator>
   )

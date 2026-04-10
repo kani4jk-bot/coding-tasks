@@ -23,9 +23,11 @@ export function PrimaryButton({ title, onPress, variant = 'primary', disabled, l
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={isPrimary ? '#FFFFFF' : '#1A3C6B'} size="small" />
+        <ActivityIndicator color={isPrimary ? '#FFFFFF' : '#8b5cf6'} size="small" />
       ) : (
-        <Text style={[styles.label, isPrimary ? styles.labelPrimary : isDanger ? styles.labelDanger : styles.labelSecondary]}>{title}</Text>
+        <Text style={[styles.label, isPrimary ? styles.labelPrimary : isDanger ? styles.labelDanger : styles.labelSecondary]}>
+          {title}
+        </Text>
       )}
     </Pressable>
   )
@@ -40,34 +42,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 50,
   },
-  primary: {
-    backgroundColor: '#1A3C6B',
-  },
-  secondary: {
-    backgroundColor: '#EEF1F8',
-  },
-  danger: {
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FECACA',
-  },
-  disabled: {
-    opacity: 0.45,
-  },
-  pressed: {
-    opacity: 0.75,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  labelPrimary: {
-    color: '#FFFFFF',
-  },
-  labelSecondary: {
-    color: '#1A3C6B',
-  },
-  labelDanger: {
-    color: '#DC2626',
-  },
+  primary: { backgroundColor: '#8b5cf6' },
+  secondary: { backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
+  danger: { backgroundColor: 'rgba(239,68,68,0.15)', borderWidth: 1, borderColor: 'rgba(252,165,165,0.4)' },
+  disabled: { opacity: 0.45 },
+  pressed: { opacity: 0.75 },
+  label: { fontSize: 16, fontWeight: '700' },
+  labelPrimary: { color: '#FFFFFF' },
+  labelSecondary: { color: '#E2E8F0' },
+  labelDanger: { color: '#FCA5A5' },
 })

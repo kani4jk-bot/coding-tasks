@@ -32,7 +32,12 @@ export function ImageUpload({ onSelect, disabled }: Props) {
         aria-label="Upload plant image"
       />
       <div className="upload-content">
-        <span className="upload-icon">📷</span>
+        <span className="upload-icon">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+            <circle cx="12" cy="13" r="4" />
+          </svg>
+        </span>
         <p>Tap to take a photo or upload an image</p>
         <p className="small muted">JPEG, PNG, or WebP · up to 10 MB</p>
       </div>

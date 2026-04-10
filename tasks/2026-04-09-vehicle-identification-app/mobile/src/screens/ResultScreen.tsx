@@ -180,7 +180,11 @@ export function ResultScreen({ route, navigation }: Props) {
             variant="secondary"
           />
         </View>
-        {savedMessage ? <Text style={styles.savedMessage}>{savedMessage}</Text> : null}
+        {savedMessage ? (
+          <View style={styles.savedBanner}>
+            <Text style={styles.savedMessage}>✓ {savedMessage}</Text>
+          </View>
+        ) : null}
       </SectionCard>
 
       <SectionCard eyebrow="Image" title={result.image.filename}>
@@ -192,7 +196,7 @@ export function ResultScreen({ route, navigation }: Props) {
       <SectionCard eyebrow="Manage" title="Remove this result">
         <PrimaryButton
           title="Delete from history"
-          variant="secondary"
+          variant="danger"
           onPress={() => {
             Alert.alert('Delete result?', 'This removes the identification and any notes from this device.', [
               { text: 'Cancel', style: 'cancel' },
@@ -373,10 +377,19 @@ const styles = StyleSheet.create({
   buttonStack: {
     gap: 10,
   },
+  savedBanner: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+  },
   savedMessage: {
-    color: '#1A3C6B',
+    color: '#2E7D32',
     fontWeight: '700',
     fontSize: 14,
+    textAlign: 'center',
   },
   meta: {
     color: '#4A5E72',

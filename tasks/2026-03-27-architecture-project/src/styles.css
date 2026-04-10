@@ -394,6 +394,12 @@ button { cursor: pointer; }
   background: linear-gradient(135deg, #8b5cf6, #ec4899);
   box-shadow: 0 16px 30px rgba(139, 92, 246, 0.28);
 }
+.primary-button:not(:disabled):hover {
+  box-shadow: 0 16px 40px rgba(139, 92, 246, 0.45);
+}
+.primary-button:not(:disabled):active {
+  transform: translateY(0) scale(0.98);
+}
 .primary-button:disabled, .secondary-button:disabled { opacity: 0.55; cursor: not-allowed; }
 .large-button {
   min-height: 58px;

@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Home Visualizer",
+    "slug": "home-visualizer",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.kani.homevisualizer",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Home Visualizer uses your camera to photograph rooms for AI editing.",
+        "NSPhotoLibraryUsageDescription": "Home Visualizer uses your photo library to select room photos for AI editing."
+      }
+    },
+    "android": {
+      "package": "com.kani.homevisualizer",
+      "permissions": ["android.permission.CAMERA", "android.permission.READ_MEDIA_IMAGES"]
+    }
+  }
+}

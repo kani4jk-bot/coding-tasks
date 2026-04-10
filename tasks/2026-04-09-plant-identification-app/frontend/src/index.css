@@ -4,12 +4,17 @@
   --green-accent: #52b788;
   --green-light: #b7e4c7;
   --green-pale: #d8f3dc;
-  --bg: #f4fbf5;
+  --bg: #f0f8f2;
   --card-bg: #ffffff;
-  --text: #1a1a1a;
+  --text: #111827;
   --text-muted: #6b7280;
   --radius: 16px;
-  --shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
+  --shadow: 0 2px 12px rgba(27, 67, 50, 0.10), 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 * {
@@ -40,21 +45,39 @@ body {
   border-radius: var(--radius);
   padding: 20px;
   box-shadow: var(--shadow);
+  border: 1px solid rgba(27, 67, 50, 0.06);
 }
 
 /* ── Header ── */
 .app-header {
   background: linear-gradient(135deg, var(--green-dark) 0%, var(--green-mid) 100%);
   border-radius: var(--radius);
-  padding: 28px 24px;
+  padding: 36px 24px 32px;
   color: #fff;
   text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.app-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 70% 20%, rgba(255,255,255,0.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.app-header-icon {
+  font-size: 2.4rem;
+  line-height: 1;
+  display: block;
+  margin-bottom: 10px;
 }
 
 .app-header h1 {
-  font-size: 1.9rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
   margin-bottom: 6px;
 }
 
@@ -73,14 +96,21 @@ body {
 .upload-area {
   border: 2px dashed var(--green-accent);
   border-radius: 12px;
-  padding: 36px 16px;
+  padding: 40px 16px;
   text-align: center;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .upload-area:hover:not(.disabled) {
   background: var(--green-pale);
+  border-color: var(--green-mid);
+  box-shadow: 0 0 0 4px rgba(82, 183, 136, 0.12);
+}
+
+.upload-area:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(82, 183, 136, 0.4);
   border-color: var(--green-mid);
 }
 
@@ -97,7 +127,7 @@ body {
 }
 
 .upload-icon {
-  font-size: 2.6rem;
+  color: var(--green-accent);
   line-height: 1;
 }
 
@@ -133,6 +163,7 @@ body {
   gap: 14px;
   color: var(--green-mid);
   font-weight: 500;
+  animation: fadeInUp 0.2s ease both;
 }
 
 .spinner {
@@ -154,6 +185,7 @@ body {
   border-left: 4px solid #ef4444;
   background: #fef2f2;
   color: #991b1b;
+  animation: fadeInUp 0.2s ease both;
 }
 
 /* ── Result ── */
@@ -161,6 +193,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  animation: fadeInUp 0.35s ease both;
 }
 
 .result-header-card {
@@ -315,4 +348,33 @@ body {
   left: 0;
   color: var(--green-accent);
   font-weight: 700;
+}
+
+/* ── Try-again action button ── */
+.btn-action {
+  display: block;
+  width: 100%;
+  padding: 15px 24px;
+  border: none;
+  border-radius: 12px;
+  background: var(--green-mid);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+  text-align: center;
+  animation: fadeInUp 0.35s ease both;
+}
+
+.btn-action:hover {
+  background: var(--green-dark);
+  box-shadow: 0 4px 14px rgba(27, 67, 50, 0.28);
+  transform: translateY(-1px);
+}
+
+.btn-action:active {
+  transform: translateY(0);
+  box-shadow: none;
 }

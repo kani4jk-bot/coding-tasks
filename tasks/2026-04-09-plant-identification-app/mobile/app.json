@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Plant ID",
+    "slug": "plant-id",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.kani.plantid",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Plant ID uses your camera to photograph plants for identification.",
+        "NSPhotoLibraryUsageDescription": "Plant ID uses your photo library to select plant photos for identification."
+      }
+    },
+    "android": {
+      "package": "com.kani.plantid",
+      "permissions": ["android.permission.CAMERA", "android.permission.READ_MEDIA_IMAGES"]
+    }
+  }
+}
