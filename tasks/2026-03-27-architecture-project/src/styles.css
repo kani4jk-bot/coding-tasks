@@ -305,9 +305,13 @@ button { cursor: pointer; }
   max-height: min(72vh, 900px);
   object-fit: contain;
   cursor: crosshair;
+  /* Allow page scroll in point mode; only block touch in box-drag mode */
+  touch-action: manipulation;
+}
+.editor-canvas.is-box-mode {
+  cursor: nwse-resize;
   touch-action: none;
 }
-.editor-canvas.is-box-mode { cursor: nwse-resize; }
 
 .selection-toolbar,
 .result-spotlight {

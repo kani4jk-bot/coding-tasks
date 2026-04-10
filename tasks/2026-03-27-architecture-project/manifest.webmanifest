@@ -1,17 +1,20 @@
 {
   "name": "Home Visualizer AI",
   "short_name": "Visualizer",
+  "description": "Reimagine any room with AI — select an area, describe the change, and see it rendered.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "browser"],
+  "orientation": "any",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
-  "description": "Mobile-friendly architecture image editing workspace.",
   "icons": [
     {
       "src": "/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
