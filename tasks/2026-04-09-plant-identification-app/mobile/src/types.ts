@@ -14,10 +14,28 @@ export interface PlantResult {
 }
 
 export interface IdentifyResponse {
+  request_id: string
+  received_at: string
+  provider: string
   result: PlantResult
+  alternatives: PlantResult[]
+  image: { filename: string; content_type: string | null; file_size_bytes: number }
+}
+
+export interface SavedIdentification {
+  id: string
+  result: IdentifyResponse
+  savedAt: string
+  starred: boolean
+  notes: string
 }
 
 export type RootStackParamList = {
-  Capture: undefined
+  MainTabs: undefined
   Result: { result: IdentifyResponse }
+}
+
+export type MainTabParamList = {
+  Capture: undefined
+  History: undefined
 }

@@ -7,6 +7,7 @@ import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { SectionCard } from '../components/SectionCard'
 import { identifyPlant } from '../lib/api'
+import { upsertIdentification } from '../lib/history'
 import type { RootStackParamList } from '../types'
 
 export function CaptureScreen() {
@@ -23,6 +24,7 @@ export function CaptureScreen() {
       setError(null)
       try {
         const result = await identifyPlant(uri, filename, mimeType)
+        await upsertIdentification(result)
         setStatus('idle')
         navigation.navigate('Result', { result })
       } catch (err) {

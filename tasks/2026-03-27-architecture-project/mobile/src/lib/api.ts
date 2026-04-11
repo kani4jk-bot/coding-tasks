@@ -1,5 +1,5 @@
 import * as FileSystem from 'expo-file-system'
-import type { Box, EditResult, Point } from '../types'
+import type { EditResult } from '../types'
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_BASE ?? 'http://localhost:5001'
 
@@ -14,23 +14,16 @@ async function uriToBase64DataUrl(uri: string): Promise<string> {
 
 export async function editImage(params: {
   imageUri: string
-  mode: 'point' | 'box'
   modification: string
-  points?: Point[]
-  box?: Box
 }): Promise<EditResult> {
-  const { imageUri, mode, modification, points, box } = params
+  const { imageUri, modification } = params
 
   const imageBase64 = await uriToBase64DataUrl(imageUri)
-
-  const body: Record<string, unknown> = { image: imageBase64, mode, modification }
-  if (mode === 'point' && points) body.points = points
-  if (mode === 'box' && box) body.box = box
 
   const res = await fetch(`${BASE_URL}/api/edit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ image: imageBase64, mode: 'full', modification }),
   })
 
   if (!res.ok) {

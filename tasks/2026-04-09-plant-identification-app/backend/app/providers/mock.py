@@ -2,7 +2,7 @@ from app.schemas import GrowingTip, PlantResult
 
 
 class MockProvider:
-    async def identify(self, image_data: bytes, content_type: str) -> PlantResult:
+    async def identify(self, image_data: bytes, content_type: str) -> tuple[PlantResult, list[PlantResult]]:
         return PlantResult(
             common_name="Monstera",
             scientific_name="Monstera deliciosa",
@@ -23,4 +23,4 @@ class MockProvider:
                 GrowingTip(category="Humidity", tip="Prefers 50–60% humidity. Mist the leaves, use a pebble tray, or run a humidifier nearby."),
                 GrowingTip(category="Fertilizing", tip="Feed once a month in spring and summer with a balanced liquid fertilizer. Skip in winter."),
             ],
-        )
+        ), []

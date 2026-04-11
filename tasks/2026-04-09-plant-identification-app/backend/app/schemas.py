@@ -30,6 +30,7 @@ class IdentifyResponse(BaseModel):
     received_at: datetime
     provider: str
     result: PlantResult
+    alternatives: list[PlantResult] = Field(default_factory=list)
     image: ImageMetadata
 
 

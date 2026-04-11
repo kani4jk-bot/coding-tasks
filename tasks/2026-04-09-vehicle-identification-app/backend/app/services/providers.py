@@ -1,11 +1,29 @@
 from __future__ import annotations
 
 import base64
+import io
 import json
 from abc import ABC, abstractmethod
 
+from PIL import Image
+
 from app.schemas import VehiclePrediction
 from app.services.mock_vehicles import MOCK_RESULTS
+
+MAX_IMAGE_BYTES = 4 * 1024 * 1024  # 4 MB — stay under Claude's 5 MB limit
+
+
+def _shrink_image(data: bytes) -> bytes:
+    img = Image.open(io.BytesIO(data)).convert("RGB")
+    quality = 85
+    while True:
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=quality)
+        result = buf.getvalue()
+        if len(result) <= MAX_IMAGE_BYTES:
+            return result
+        w, h = img.size
+        img = img.resize((int(w * 0.8), int(h * 0.8)), Image.LANCZOS)
 
 VEHICLE_ID_PROMPT = """\
 You are an expert vehicle identification system with deep knowledge of cars, trucks, motorcycles, \
@@ -75,6 +93,10 @@ class ClaudeVisionProvider(VehicleClassifierProvider):
 
     def predict(self, image_bytes: bytes, filename: str) -> list[VehiclePrediction]:
         import anthropic as _anthropic
+
+        if len(image_bytes) > MAX_IMAGE_BYTES:
+            image_bytes = _shrink_image(image_bytes)
+            filename = "upload.jpg"  # always JPEG after shrink
 
         media_type = self._media_type(filename)
         image_b64 = base64.standard_b64encode(image_bytes).decode()

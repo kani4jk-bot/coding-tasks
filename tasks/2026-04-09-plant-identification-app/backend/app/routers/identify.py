@@ -29,7 +29,7 @@ async def identify_plant(image: UploadFile = File(...)):
         )
 
     provider = get_provider(settings)
-    result = await provider.identify(data, content_type)
+    result, alternatives = await provider.identify(data, content_type)
 
     request_id = f"plantreq_{uuid.uuid4().hex[:12]}"
 
@@ -38,6 +38,7 @@ async def identify_plant(image: UploadFile = File(...)):
         received_at=datetime.now(timezone.utc),
         provider=settings.identifier_provider,
         result=result,
+        alternatives=alternatives,
         image=ImageMetadata(
             filename=image.filename or "upload",
             content_type=content_type,
