@@ -21,11 +21,8 @@ yarn-error.log*
 dist/
 build/
 
-# Outputs
-outputs/
-*.png
-*.jpg
-*.jpeg
+# Backend generated outputs
+backend/outputs/
 
 # IDE
 .vscode/

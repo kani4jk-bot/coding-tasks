@@ -18,15 +18,16 @@ A workspace for coding tasks completed through OpenClaw. Each task lives in `tas
 
 AI-powered architectural image editor.
 
-- **Frontend:** React 18 + Vite (JSX, `website.jsx`), served at `localhost:3000`
-- **Backend:** Flask API (`app.py`) at `localhost:5001`
+- **Structure:** `backend/` (Flask), `frontend/` (Vite/React), `mobile/` (Expo), `docs/`
+- **Frontend:** React 18 + Vite (JSX, `frontend/src/App.jsx`), served at `localhost:3000`
+- **Backend:** Flask API (`backend/app.py`) at `localhost:5001`
 - **Modes:** `BACKEND_MODE=local` (SAM + Stable Diffusion locally) or `BACKEND_MODE=hosted` (SAM local + Fal for inpainting)
 - **Key env vars:** `BACKEND_MODE`, `HOSTED_EDIT_PROVIDER`, `FAL_KEY`, `VITE_API_BASE`
 - **API endpoints:** `GET /api/health`, `POST /api/edit`, `POST /api/test`
-- **Run:** `python app.py` (backend), `npm run dev` (frontend)
+- **Run:** `cd backend && python app.py` (backend), `cd frontend && npm run dev` (frontend)
 - Local models download automatically on first run (~2–3 GB: `facebook/sam-vit-huge`, `runwayml/stable-diffusion-inpainting`)
 - Device auto-detection: CUDA → MPS → CPU
-- Outputs written to `outputs/` with timestamps
+- Outputs written to `backend/outputs/` with timestamps
 
 ### `tasks/2026-04-01-bird-song-id-mvp/`
 
