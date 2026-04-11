@@ -74,36 +74,44 @@ class ClaudeVisionProvider(VehicleClassifierProvider):
         return "claude"
 
     def predict(self, image_bytes: bytes, filename: str) -> list[VehiclePrediction]:
+        import anthropic as _anthropic
+
         media_type = self._media_type(filename)
         image_b64 = base64.standard_b64encode(image_bytes).decode()
 
-        message = self._client.messages.create(
-            model="claude-opus-4-6",
-            max_tokens=2048,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": media_type,
-                                "data": image_b64,
+        try:
+            message = self._client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=2048,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": media_type,
+                                    "data": image_b64,
+                                },
                             },
-                        },
-                        {"type": "text", "text": VEHICLE_ID_PROMPT},
-                    ],
-                }
-            ],
-        )
+                            {"type": "text", "text": VEHICLE_ID_PROMPT},
+                        ],
+                    }
+                ],
+            )
+        except _anthropic.APIError as exc:
+            raise ValueError(f"Claude API error: {exc.message}") from exc
 
         raw = message.content[0].text.strip()
         # Strip accidental markdown fences if Claude adds them
         if raw.startswith("```"):
             raw = raw.split("\n", 1)[1].rsplit("```", 1)[0].strip()
 
-        data = json.loads(raw)
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Could not parse model response as JSON: {exc}") from exc
 
         if not data.get("vehicles"):
             raise ValueError(data.get("no_vehicle_message", "No vehicle detected in this image."))

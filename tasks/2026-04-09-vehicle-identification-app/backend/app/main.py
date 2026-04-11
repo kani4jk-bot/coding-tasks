@@ -48,5 +48,16 @@ async def validation_exception_handler(_: Request, exc: RequestValidationError):
     )
 
 
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(_: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={
+            "request_id": "vehreq_error",
+            "error": {"code": "internal_error", "message": str(exc) or "An unexpected error occurred."},
+        },
+    )
+
+
 app.include_router(health_router)
 app.include_router(identify_router)
