@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import * as ImagePicker from 'expo-image-picker'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native'
 
 import { PrimaryButton } from '../components/PrimaryButton'
 import { SectionCard } from '../components/SectionCard'
@@ -11,8 +11,11 @@ import type { RootStackParamList } from '../types'
 
 export function CaptureScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const [cameraPermission, requestCameraPermission] = ImagePicker.useCameraPermissions()
   const [status, setStatus] = useState<'idle' | 'uploading'>('idle')
   const [error, setError] = useState<string | null>(null)
+
+  const cameraBlocked = cameraPermission?.granted === false && !cameraPermission?.canAskAgain
 
   const pickAndIdentify = useCallback(
     async (uri: string, filename: string, mimeType: string) => {
@@ -32,6 +35,14 @@ export function CaptureScreen() {
 
   const handleCamera = useCallback(async () => {
     setError(null)
+    const hasPerm = cameraPermission?.granted ?? false
+    if (!hasPerm) {
+      const result = await requestCameraPermission()
+      if (!result.granted) {
+        setError('Camera permission is required to take photos.')
+        return
+      }
+    }
     const picked = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.85 })
     if (picked.canceled || !picked.assets[0]) return
     const asset = picked.assets[0]
@@ -72,6 +83,13 @@ export function CaptureScreen() {
             variant="secondary"
             disabled={status === 'uploading'}
           />
+          {cameraBlocked ? (
+            <PrimaryButton
+              title="Open app settings"
+              onPress={() => { Linking.openSettings().catch(() => undefined) }}
+              variant="secondary"
+            />
+          ) : null}
         </View>
       </SectionCard>
 

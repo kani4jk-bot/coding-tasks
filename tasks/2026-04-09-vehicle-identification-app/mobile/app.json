@@ -13,10 +13,10 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.yourcompany.vehicleid",
+      "bundleIdentifier": "com.kani.vehicleid",
       "infoPlist": {
-        "NSCameraUsageDescription": "Camera is used to photograph vehicles for identification.",
-        "NSPhotoLibraryUsageDescription": "Photo library access lets you pick an existing vehicle photo."
+        "NSCameraUsageDescription": "VehicleID uses your camera to photograph vehicles for AI identification.",
+        "NSPhotoLibraryUsageDescription": "VehicleID uses your photo library to select vehicle photos for identification."
       }
     },
     "android": {
@@ -24,20 +24,14 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#0D1B2A"
       },
-      "package": "com.yourcompany.vehicleid",
-      "permissions": ["android.permission.CAMERA", "android.permission.READ_EXTERNAL_STORAGE"]
+      "package": "com.kani.vehicleid",
+      "permissions": ["android.permission.CAMERA", "android.permission.READ_MEDIA_IMAGES"]
     },
     "plugins": [
       [
         "expo-camera",
         {
-          "cameraPermission": "Camera is used to photograph vehicles for identification."
-        }
-      ],
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Photo library access lets you pick an existing vehicle photo."
+          "cameraPermission": "VehicleID uses your camera to photograph vehicles for AI identification."
         }
       ]
     ]

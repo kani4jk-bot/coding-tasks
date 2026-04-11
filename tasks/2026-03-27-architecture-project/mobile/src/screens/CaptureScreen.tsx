@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import * as ImagePicker from 'expo-image-picker'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native'
 
 import { PrimaryButton } from '../components/PrimaryButton'
 import { SectionCard } from '../components/SectionCard'
@@ -12,7 +12,10 @@ const ROOM_TYPES = ['Living rooms', 'Kitchens', 'Bedrooms', 'Bathrooms', 'Home o
 
 export function CaptureScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+  const [cameraPermission, requestCameraPermission] = ImagePicker.useCameraPermissions()
   const [error, setError] = useState<string | null>(null)
+
+  const cameraBlocked = cameraPermission?.granted === false && !cameraPermission?.canAskAgain
 
   const handlePick = useCallback(
     async (picker: () => Promise<ImagePicker.ImagePickerResult>) => {
@@ -29,11 +32,20 @@ export function CaptureScreen() {
     [navigation],
   )
 
-  const handleCamera = useCallback(() => {
+  const handleCamera = useCallback(async () => {
+    setError(null)
+    const hasPerm = cameraPermission?.granted ?? false
+    if (!hasPerm) {
+      const result = await requestCameraPermission()
+      if (!result.granted) {
+        setError('Camera permission is required to take photos.')
+        return
+      }
+    }
     handlePick(() =>
       ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9, allowsEditing: false }),
     ).catch(() => undefined)
-  }, [handlePick])
+  }, [cameraPermission, handlePick, requestCameraPermission])
 
   const handleLibrary = useCallback(() => {
     handlePick(() =>
@@ -65,6 +77,13 @@ export function CaptureScreen() {
         <View style={styles.buttonStack}>
           <PrimaryButton title="Take a photo" onPress={handleCamera} />
           <PrimaryButton title="Pick from library" onPress={handleLibrary} variant="secondary" />
+          {cameraBlocked ? (
+            <PrimaryButton
+              title="Open app settings"
+              onPress={() => { Linking.openSettings().catch(() => undefined) }}
+              variant="secondary"
+            />
+          ) : null}
         </View>
       </SectionCard>
 
