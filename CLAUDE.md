@@ -86,6 +86,18 @@ Make a call and tell me what you decided. Don't stop to ask unless you're truly 
 - Don't add error handling for scenarios that can't happen.
 - Don't design for hypothetical future requirements.
 
+### New app default ("Option C")
+When asked to build a new app, always build **all three** by default without asking:
+1. **Backend** — FastAPI (Python), deployable to Railway (Dockerfile + railway.toml, PostgreSQL support via `DATABASE_URL`)
+2. **Frontend** — Vite + React 18 + TypeScript (web)
+3. **Mobile** — Expo / React Native (Expo Go compatible)
+
+Mobile specifics to get right from the start:
+- Expo SDK ~52, React 18.3.1, React Native 0.76.7 (these are the versions that resolve cleanly)
+- `expo-clipboard` for paste-from-clipboard in any text-input modal
+- `EXPO_PUBLIC_API_BASE` env var pointing to Railway URL
+- CORS on the backend must be `allow_origins=["*"]` with `allow_credentials=False` so Expo Go on physical devices can reach Railway
+
 ### Git / GitHub
 - Never push, force-push, or open PRs without my explicit confirmation.
 - Commit style: conventional commits (`feat:`, `fix:`, `chore:`, etc.) are fine; follow the pattern in the existing log.
