@@ -1,7 +1,17 @@
+import os
+
 from sqlmodel import SQLModel, create_engine, Session
 
-DATABASE_URL = "sqlite:///./travel.db"
-engine = create_engine(DATABASE_URL, echo=False)
+
+def _db_url() -> str:
+    url = os.getenv("DATABASE_URL", "sqlite:///./travel.db")
+    # Railway PostgreSQL uses postgres:// but SQLAlchemy needs postgresql://
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+    return url
+
+
+engine = create_engine(_db_url(), echo=False)
 
 
 def create_db() -> None:
