@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system'
+import * as FileSystem from 'expo-file-system/legacy'
 import type { EditResult } from '../types'
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_BASE ?? 'http://localhost:5001'
