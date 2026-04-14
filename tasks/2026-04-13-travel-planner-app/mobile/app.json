@@ -1,7 +1,6 @@
 {
   "expo": {
     "name": "Travel Planner",
-    "newArchEnabled": false,
     "slug": "travel-planner",
     "version": "1.0.0",
     "orientation": "portrait",
