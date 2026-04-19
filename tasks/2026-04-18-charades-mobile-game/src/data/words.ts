@@ -120,6 +120,22 @@ export const CATEGORIES: Category[] = [
       'Walkie-talkie', 'Binoculars', 'Abacus', 'Kaleidoscope',
     ],
   },
+  {
+    id: 'countries',
+    name: 'Countries',
+    emoji: '🌍',
+    color: '#2980B9',
+    words: [
+      'Brazil', 'Australia', 'Japan', 'Egypt', 'Canada',
+      'Mexico', 'France', 'Russia', 'India', 'China',
+      'Argentina', 'South Africa', 'Italy', 'Germany', 'Spain',
+      'Thailand', 'Greece', 'Sweden', 'Switzerland', 'Portugal',
+      'New Zealand', 'Kenya', 'Morocco', 'Colombia', 'Peru',
+      'Turkey', 'Norway', 'Netherlands', 'Ireland', 'Scotland',
+      'Cuba', 'Jamaica', 'Iceland', 'Finland', 'Vietnam',
+      'Indonesia', 'Philippines', 'Pakistan', 'Bangladesh', 'Nigeria',
+    ],
+  },
 ];
 
 export function getShuffledWords(categoryIds: string[], count: number): string[] {
