@@ -1,3 +1,5 @@
+import { shuffleArray } from '../utils/game';
+
 export type Category = {
   id: string;
   name: string;
@@ -104,7 +106,7 @@ export const CATEGORIES: Category[] = [
       'Brooklyn Nine-Nine', 'The Crown', 'Squid Game', 'Euphoria',
       'Bridgerton', 'Ted Lasso', 'Succession', 'The Mandalorian',
       'Sherlock', 'Black Mirror', 'Peaky Blinders', 'Downton Abbey',
-      'Grey's Anatomy', 'Survivor', 'The Bachelor', 'Jeopardy',
+      'Grey\'s Anatomy', 'Survivor', 'The Bachelor', 'Jeopardy',
     ],
   },
   {
@@ -145,6 +147,5 @@ export function getShuffledWords(categoryIds: string[], count: number): string[]
       pool.push(...cat.words);
     }
   }
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, Math.min(count, shuffled.length));
+  return shuffleArray(pool).slice(0, Math.min(count, pool.length));
 }

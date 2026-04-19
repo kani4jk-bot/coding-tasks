@@ -1,7 +1,10 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import PrimaryButton from '../components/PrimaryButton';
 import type { RootStackParamList } from '../types';
+import { rankTeams } from '../utils/game';
+import { COLORS, shared } from '../styles/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'TurnResult'>;
 
@@ -11,24 +14,22 @@ export default function TurnResultScreen({ navigation, route }: Props) {
 
   const nextTeamIndex = currentTeamIndex + 1;
   const isLastTeamInRound = nextTeamIndex >= settings.teams.length;
-  const nextRound = isLastTeamInRound ? currentRound + 1 : currentRound;
   const isGameOver = isLastTeamInRound && currentRound >= settings.totalRounds;
 
   function handleNext() {
     if (isGameOver) {
       navigation.navigate('FinalScore', { settings, scores });
     } else if (isLastTeamInRound) {
-      navigation.navigate('Ready', { settings, currentRound: nextRound, currentTeamIndex: 0, scores });
+      navigation.navigate('Ready', { settings, currentRound: currentRound + 1, currentTeamIndex: 0, scores });
     } else {
       navigation.navigate('Ready', { settings, currentRound, currentTeamIndex: nextTeamIndex, scores });
     }
   }
 
-  const wordsByResult = {
-    correct: result.words.filter(w => w.result === 'correct'),
-    skipped: result.words.filter(w => w.result === 'skipped'),
-    unanswered: result.words.filter(w => w.result === 'unanswered'),
-  };
+  const correctWords = result.words.filter(w => w.result === 'correct');
+  const skippedWords = result.words.filter(w => w.result === 'skipped');
+  const ranked = rankTeams(settings.teams, scores);
+  const nextTeam = isLastTeamInRound ? settings.teams[0] : settings.teams[nextTeamIndex];
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: team.color }]}>
@@ -36,41 +37,38 @@ export default function TurnResultScreen({ navigation, route }: Props) {
         <View style={styles.heroSection}>
           <Text style={styles.teamName}>{team.name}</Text>
           <Text style={styles.scoreValue}>+{result.correct}</Text>
-          <Text style={styles.scoreLabel}>points this round</Text>
+          <Text style={styles.scoreLabel}>points this turn</Text>
 
-          <View style={styles.totalsRow}>
+          <View style={styles.statsRow}>
             <View style={styles.statBox}>
               <Text style={styles.statNum}>{result.correct}</Text>
-              <Text style={styles.statLbl}>✓ Correct</Text>
+              <Text style={styles.statLbl}>Correct</Text>
             </View>
+            <View style={styles.statDivider} />
             <View style={styles.statBox}>
               <Text style={styles.statNum}>{result.skipped}</Text>
-              <Text style={styles.statLbl}>⤭ Skipped</Text>
+              <Text style={styles.statLbl}>Skipped</Text>
             </View>
           </View>
         </View>
 
-        {/* Score board */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Scoreboard</Text>
-          {[...settings.teams]
-            .sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0))
-            .map((t, i) => (
-              <View key={t.id} style={styles.scoreRow}>
-                <Text style={styles.scorePos}>#{i + 1}</Text>
-                <View style={[styles.scoreColorDot, { backgroundColor: t.color }]} />
-                <Text style={styles.scoreTeamName}>{t.name}</Text>
-                <Text style={styles.scorePoints}>{scores[t.id] ?? 0} pts</Text>
-              </View>
-            ))}
+          <Text style={shared.sectionLabel}>Scoreboard</Text>
+          {ranked.map((t, i) => (
+            <View key={t.id} style={[styles.scoreRow, t.id === team.id && styles.scoreRowHighlight]}>
+              <Text style={styles.scorePos}>#{i + 1}</Text>
+              <View style={[styles.scoreColorDot, { backgroundColor: t.color }]} />
+              <Text style={styles.scoreTeamName}>{t.name}</Text>
+              <Text style={styles.scorePoints}>{scores[t.id] ?? 0} pts</Text>
+            </View>
+          ))}
         </View>
 
-        {/* Word breakdown */}
-        {wordsByResult.correct.length > 0 && (
+        {correctWords.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>✓ Got it!</Text>
+            <Text style={shared.sectionLabel}>✓ Got it!</Text>
             <View style={styles.wordPills}>
-              {wordsByResult.correct.map((w, i) => (
+              {correctWords.map((w, i) => (
                 <View key={i} style={[styles.pill, styles.pillCorrect]}>
                   <Text style={styles.pillText}>{w.word}</Text>
                 </View>
@@ -78,11 +76,12 @@ export default function TurnResultScreen({ navigation, route }: Props) {
             </View>
           </View>
         )}
-        {wordsByResult.skipped.length > 0 && (
+
+        {skippedWords.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>⤭ Skipped</Text>
+            <Text style={shared.sectionLabel}>↷ Skipped</Text>
             <View style={styles.wordPills}>
-              {wordsByResult.skipped.map((w, i) => (
+              {skippedWords.map((w, i) => (
                 <View key={i} style={[styles.pill, styles.pillSkipped]}>
                   <Text style={styles.pillText}>{w.word}</Text>
                 </View>
@@ -91,11 +90,13 @@ export default function TurnResultScreen({ navigation, route }: Props) {
           </View>
         )}
 
-        <TouchableOpacity style={styles.nextBtn} onPress={handleNext} activeOpacity={0.85}>
-          <Text style={styles.nextBtnText}>
-            {isGameOver ? 'See Final Results 🏆' : `Next: ${isLastTeamInRound ? settings.teams[0].name : settings.teams[nextTeamIndex].name}'s Turn →`}
-          </Text>
-        </TouchableOpacity>
+        <PrimaryButton
+          label={isGameOver ? 'See Final Results 🏆' : `Next: ${nextTeam.name}'s Turn →`}
+          onPress={handleNext}
+          color="#FFF"
+          textColor="#1A1A1A"
+          style={styles.nextBtn}
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -104,34 +105,47 @@ export default function TurnResultScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { padding: 24, paddingBottom: 40 },
-  heroSection: { alignItems: 'center', marginBottom: 24 },
-  teamName: { fontSize: 28, fontWeight: '900', color: '#FFF', marginBottom: 8 },
-  scoreValue: { fontSize: 80, fontWeight: '900', color: '#FFF', lineHeight: 88 },
-  scoreLabel: { fontSize: 16, color: 'rgba(255,255,255,0.8)', marginBottom: 20 },
-  totalsRow: { flexDirection: 'row', gap: 16 },
-  statBox: {
-    backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 16,
-    paddingVertical: 16, paddingHorizontal: 28, alignItems: 'center',
+  heroSection: { alignItems: 'center', marginBottom: 20 },
+  teamName: { fontSize: 26, fontWeight: '800', color: '#FFF', marginBottom: 4, opacity: 0.9 },
+  scoreValue: { fontSize: 88, fontWeight: '900', color: '#FFF', lineHeight: 96 },
+  scoreLabel: { fontSize: 15, color: 'rgba(255,255,255,0.7)', marginBottom: 20 },
+  statsRow: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderRadius: 18,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
+  statBox: { flex: 1, paddingVertical: 18, alignItems: 'center' },
+  statDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.15)' },
   statNum: { fontSize: 32, fontWeight: '900', color: '#FFF' },
-  statLbl: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
-  section: { backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 16, padding: 16, marginBottom: 12 },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.7)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 },
-  scoreRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 10 },
-  scorePos: { fontSize: 14, color: 'rgba(255,255,255,0.6)', width: 24 },
-  scoreColorDot: { width: 10, height: 10, borderRadius: 5 },
-  scoreTeamName: { flex: 1, fontSize: 16, fontWeight: '700', color: '#FFF' },
-  scorePoints: { fontSize: 18, fontWeight: '900', color: '#F1C40F' },
-  wordPills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  pill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  pillCorrect: { backgroundColor: 'rgba(39,174,96,0.5)' },
-  pillSkipped: { backgroundColor: 'rgba(231,76,60,0.4)' },
-  pillText: { color: '#FFF', fontSize: 13, fontWeight: '600' },
-  nextBtn: {
-    marginTop: 20, backgroundColor: '#FFF', borderRadius: 50,
-    paddingVertical: 18, alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3, shadowRadius: 6, elevation: 8,
+  statLbl: { fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: '600', letterSpacing: 0.3 },
+  section: {
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
-  nextBtnText: { fontSize: 16, fontWeight: '800', color: '#1A1A1A' },
+  scoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    gap: 10,
+    borderRadius: 10,
+    paddingHorizontal: 4,
+  },
+  scoreRowHighlight: { backgroundColor: 'rgba(255,255,255,0.12)' },
+  scorePos: { fontSize: 13, color: 'rgba(255,255,255,0.5)', width: 24, fontWeight: '700' },
+  scoreColorDot: { width: 10, height: 10, borderRadius: 5 },
+  scoreTeamName: { flex: 1, fontSize: 15, fontWeight: '700', color: '#FFF' },
+  scorePoints: { fontSize: 17, fontWeight: '900', color: COLORS.accent },
+  wordPills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  pill: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
+  pillCorrect: { backgroundColor: 'rgba(39,174,96,0.45)' },
+  pillSkipped: { backgroundColor: 'rgba(231,76,60,0.35)' },
+  pillText: { color: '#FFF', fontSize: 13, fontWeight: '600' },
+  nextBtn: { marginTop: 8 },
 });

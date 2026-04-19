@@ -1,38 +1,58 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import PrimaryButton from '../components/PrimaryButton';
 import type { RootStackParamList } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Ready'>;
 
+const RULES = [
+  `No talking as the word`,
+  `No pointing at nearby objects`,
+  `No mouthing or spelling it out`,
+];
+
 export default function ReadyScreen({ navigation, route }: Props) {
-  const { settings, currentRound, currentTeamIndex, scores } = route.params;
+  const { settings, currentRound, currentTeamIndex } = route.params;
   const team = settings.teams[currentTeamIndex];
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: team.color }]}>
       <View style={styles.content}>
-        <Text style={styles.roundLabel}>Round {currentRound} of {settings.totalRounds}</Text>
+        <Text style={styles.roundPill}>
+          Round {currentRound} / {settings.totalRounds}
+        </Text>
+
         <View style={styles.card}>
           <Text style={styles.emoji}>🎭</Text>
           <Text style={styles.teamName}>{team.name}</Text>
           <Text style={styles.instruction}>
             Pass the phone to the actor.{'\n'}Everyone else, get ready to guess!
           </Text>
+
+          <View style={styles.divider} />
+
           <View style={styles.rules}>
-            <Text style={styles.ruleItem}>⏱ {settings.turnDurationSeconds} seconds</Text>
-            <Text style={styles.ruleItem}>🚫 No talking as the word</Text>
-            <Text style={styles.ruleItem}>🚫 No pointing at objects</Text>
+            <Text style={styles.rulesLabel}>RULES</Text>
+            {RULES.map((rule, i) => (
+              <View key={i} style={styles.ruleRow}>
+                <Text style={styles.ruleDot}>🚫</Text>
+                <Text style={styles.ruleText}>{rule}</Text>
+              </View>
+            ))}
+            <View style={styles.ruleRow}>
+              <Text style={styles.ruleDot}>⏱</Text>
+              <Text style={styles.ruleText}>{settings.turnDurationSeconds} seconds per turn</Text>
+            </View>
           </View>
         </View>
 
-        <TouchableOpacity
-          style={styles.goBtn}
+        <PrimaryButton
+          label="I'm Ready — GO!"
           onPress={() => navigation.navigate('Game', route.params)}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.goBtnText}>I'm Ready — GO!</Text>
-        </TouchableOpacity>
+          color="#FFF"
+          textColor="#1A1A1A"
+        />
       </View>
     </SafeAreaView>
   );
@@ -40,22 +60,56 @@ export default function ReadyScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { flex: 1, padding: 24, alignItems: 'center', justifyContent: 'center' },
-  roundLabel: { fontSize: 16, fontWeight: '700', color: 'rgba(255,255,255,0.8)', marginBottom: 24, letterSpacing: 1 },
+  content: {
+    flex: 1,
+    padding: 24,
+    justifyContent: 'center',
+    gap: 20,
+  },
+  roundPill: {
+    alignSelf: 'center',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 1,
+    color: 'rgba(255,255,255,0.75)',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    textTransform: 'uppercase',
+  },
   card: {
-    backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 24, padding: 32,
-    alignItems: 'center', width: '100%', gap: 12,
+    backgroundColor: 'rgba(0,0,0,0.22)',
+    borderRadius: 24,
+    padding: 28,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    gap: 10,
   },
-  emoji: { fontSize: 56 },
-  teamName: { fontSize: 32, fontWeight: '900', color: '#FFF' },
-  instruction: { fontSize: 16, color: 'rgba(255,255,255,0.9)', textAlign: 'center', lineHeight: 24 },
-  rules: { marginTop: 8, gap: 6, alignSelf: 'stretch' },
-  ruleItem: { fontSize: 14, color: 'rgba(255,255,255,0.85)', textAlign: 'center' },
-  goBtn: {
-    marginTop: 36, backgroundColor: '#FFF', borderRadius: 50,
-    paddingVertical: 20, paddingHorizontal: 48,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3, shadowRadius: 6, elevation: 8,
+  emoji: { fontSize: 52 },
+  teamName: { fontSize: 34, fontWeight: '900', color: '#FFF' },
+  instruction: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.85)',
+    textAlign: 'center',
+    lineHeight: 24,
   },
-  goBtnText: { fontSize: 20, fontWeight: '900', color: '#1A1A1A' },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignSelf: 'stretch',
+    marginVertical: 4,
+  },
+  rules: { alignSelf: 'stretch', gap: 8 },
+  rulesLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    color: 'rgba(255,255,255,0.5)',
+    marginBottom: 2,
+  },
+  ruleRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  ruleDot: { fontSize: 14 },
+  ruleText: { fontSize: 14, color: 'rgba(255,255,255,0.82)', flex: 1 },
 });

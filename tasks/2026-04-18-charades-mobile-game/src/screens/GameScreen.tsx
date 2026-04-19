@@ -6,6 +6,7 @@ import {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList, TurnResult } from '../types';
 import { getShuffledWords } from '../data/words';
+import { COLORS } from '../styles/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Game'>;
 type WordResult = { word: string; result: 'correct' | 'skipped' | 'unanswered' };
@@ -22,8 +23,9 @@ export default function GameScreen({ navigation, route }: Props) {
   const [skippedCount, setSkippedCount] = useState(0);
   const [gameOver, setGameOver] = useState(false);
 
-  const flashAnim = useRef(new Animated.Value(0)).current;
   const wordScaleAnim = useRef(new Animated.Value(1)).current;
+  const flashOpacity = useRef(new Animated.Value(0)).current;
+  const [flashColor, setFlashColor] = useState('rgba(255,255,255,0.2)');
   const timerInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const endTurn = useCallback((finalResults: WordResult[], finalCorrect: number, finalSkipped: number, remainingWord: string) => {
@@ -54,7 +56,8 @@ export default function GameScreen({ navigation, route }: Props) {
     timerInterval.current = setInterval(() => {
       setTimeLeft(t => {
         if (t <= 1) {
-          // endTurn will be called via the gameOver state change below
+          // Clear immediately to stop firing after zero
+          if (timerInterval.current) clearInterval(timerInterval.current);
           return 0;
         }
         if (t <= 6) Vibration.vibrate(60);
@@ -73,11 +76,12 @@ export default function GameScreen({ navigation, route }: Props) {
   }, [timeLeft, gameOver, results, correctCount, skippedCount, words, wordIndex, endTurn]);
 
   function animateWordChange(color: string) {
-    flashAnim.setValue(1);
-    Animated.timing(flashAnim, { toValue: 0, duration: 300, useNativeDriver: false }).start();
+    setFlashColor(color);
+    flashOpacity.setValue(0.9);
+    Animated.timing(flashOpacity, { toValue: 0, duration: 350, useNativeDriver: true }).start();
     Animated.sequence([
-      Animated.timing(wordScaleAnim, { toValue: 1.1, duration: 80, useNativeDriver: true }),
-      Animated.timing(wordScaleAnim, { toValue: 1, duration: 150, useNativeDriver: true }),
+      Animated.timing(wordScaleAnim, { toValue: 1.08, duration: 70, useNativeDriver: true }),
+      Animated.timing(wordScaleAnim, { toValue: 1, duration: 140, useNativeDriver: true }),
     ]).start();
   }
 
@@ -86,7 +90,7 @@ export default function GameScreen({ navigation, route }: Props) {
     const word = words[wordIndex];
     if (!word) return;
     Vibration.vibrate(Platform.OS === 'android' ? 50 : 30);
-    animateWordChange('#27AE60');
+    animateWordChange('rgba(39,174,96,0.45)');
     const newResults = [...results, { word, result: 'correct' as const }];
     const newCorrect = correctCount + 1;
     setResults(newResults);
@@ -102,7 +106,7 @@ export default function GameScreen({ navigation, route }: Props) {
     if (gameOver) return;
     const word = words[wordIndex];
     if (!word) return;
-    animateWordChange('#E74C3C');
+    animateWordChange('rgba(231,76,60,0.35)');
     const newResults = [...results, { word, result: 'skipped' as const }];
     const newSkipped = skippedCount + 1;
     setResults(newResults);
@@ -115,43 +119,41 @@ export default function GameScreen({ navigation, route }: Props) {
   }
 
   const timerPercent = timeLeft / settings.turnDurationSeconds;
-  const timerColor = timeLeft > 15 ? '#27AE60' : timeLeft > 6 ? '#F39C12' : '#E74C3C';
+  const timerColor = timeLeft > 15 ? COLORS.success : timeLeft > 6 ? COLORS.warning : COLORS.danger;
   const currentWord = words[wordIndex] ?? '—';
-
-  const flashBgColor = flashAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['rgba(0,0,0,0)', 'rgba(255,255,255,0.15)'],
-  });
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: team.color }]}>
       <View style={styles.header}>
         <View style={styles.scoreBadge}>
-          <Text style={styles.scoreLabel}>✓ {correctCount}</Text>
+          <Text style={styles.scoreIcon}>✓</Text>
+          <Text style={styles.scoreNum}>{correctCount}</Text>
         </View>
-        <View style={styles.timerContainer}>
-          <Text style={[styles.timerText, { color: timerColor }]}>{timeLeft}</Text>
-        </View>
+        <Text style={[styles.timerText, { color: timerColor }]}>{timeLeft}</Text>
         <View style={styles.scoreBadge}>
-          <Text style={styles.scoreLabel}>⤭ {skippedCount}</Text>
+          <Text style={styles.scoreIcon}>↷</Text>
+          <Text style={styles.scoreNum}>{skippedCount}</Text>
         </View>
       </View>
 
-      {/* Timer bar */}
       <View style={styles.timerBarBg}>
         <View style={[styles.timerBarFill, { width: `${timerPercent * 100}%`, backgroundColor: timerColor }]} />
       </View>
 
-      <Animated.View style={[styles.wordContainer, { backgroundColor: flashBgColor }]}>
+      <View style={styles.wordContainer}>
+        <Animated.View
+          style={[StyleSheet.absoluteFillObject, styles.flashOverlay, { backgroundColor: flashColor, opacity: flashOpacity }]}
+          pointerEvents="none"
+        />
         <Animated.Text style={[styles.wordText, { transform: [{ scale: wordScaleAnim }] }]}>
           {currentWord}
         </Animated.Text>
         <Text style={styles.actItOut}>Act it out!</Text>
-      </Animated.View>
+      </View>
 
       <View style={styles.buttons}>
         <TouchableOpacity style={styles.skipBtn} onPress={handleSkip} activeOpacity={0.8} disabled={gameOver}>
-          <Text style={styles.skipBtnIcon}>⤭</Text>
+          <Text style={styles.skipBtnIcon}>↷</Text>
           <Text style={styles.skipBtnText}>Skip</Text>
         </TouchableOpacity>
 
@@ -167,39 +169,87 @@ export default function GameScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 10,
   },
-  scoreBadge: { backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8 },
-  scoreLabel: { fontSize: 18, fontWeight: '800', color: '#FFF' },
-  timerContainer: { alignItems: 'center' },
-  timerText: { fontSize: 48, fontWeight: '900', fontVariant: ['tabular-nums'] },
-  timerBarBg: { height: 6, backgroundColor: 'rgba(0,0,0,0.2)', marginHorizontal: 24, borderRadius: 3 },
-  timerBarFill: { height: 6, borderRadius: 3 },
+  scoreBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.22)',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  scoreIcon: { fontSize: 14, color: 'rgba(255,255,255,0.7)' },
+  scoreNum: { fontSize: 20, fontWeight: '800', color: '#FFF' },
+  timerText: { fontSize: 52, fontWeight: '900', fontVariant: ['tabular-nums'] },
+  timerBarBg: {
+    height: 5,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    marginHorizontal: 24,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  timerBarFill: { height: 5, borderRadius: 3 },
   wordContainer: {
-    flex: 1, alignItems: 'center', justifyContent: 'center',
-    paddingHorizontal: 32, borderRadius: 24, margin: 16,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    margin: 16,
+    borderRadius: 28,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    overflow: 'hidden',
   },
+  flashOverlay: { borderRadius: 28 },
   wordText: {
-    fontSize: 44, fontWeight: '900', color: '#FFF',
-    textAlign: 'center', lineHeight: 52,
-    textShadowColor: 'rgba(0,0,0,0.2)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 4,
+    fontSize: 46,
+    fontWeight: '900',
+    color: '#FFF',
+    textAlign: 'center',
+    lineHeight: 54,
+    textShadowColor: 'rgba(0,0,0,0.25)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
-  actItOut: { fontSize: 16, color: 'rgba(255,255,255,0.7)', marginTop: 12, fontStyle: 'italic' },
-  buttons: { flexDirection: 'row', gap: 16, padding: 24, paddingBottom: 32 },
+  actItOut: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.6)',
+    marginTop: 14,
+    fontStyle: 'italic',
+    letterSpacing: 0.5,
+  },
+  buttons: { flexDirection: 'row', gap: 12, padding: 20, paddingBottom: 28 },
   skipBtn: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 20,
-    paddingVertical: 22, alignItems: 'center',
-    borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)',
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    borderRadius: 22,
+    paddingVertical: 22,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.2)',
+    gap: 2,
   },
-  skipBtnIcon: { fontSize: 28, color: '#FFF' },
-  skipBtnText: { fontSize: 14, fontWeight: '700', color: 'rgba(255,255,255,0.8)', marginTop: 2 },
+  skipBtnIcon: { fontSize: 22, color: 'rgba(255,255,255,0.85)' },
+  skipBtnText: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.7)', letterSpacing: 0.3 },
   correctBtn: {
-    flex: 2, backgroundColor: '#FFF', borderRadius: 20,
-    paddingVertical: 22, alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3, shadowRadius: 6, elevation: 8,
+    flex: 2,
+    backgroundColor: '#FFF',
+    borderRadius: 22,
+    paddingVertical: 22,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+    gap: 2,
   },
-  correctBtnIcon: { fontSize: 36, color: '#27AE60', fontWeight: '900' },
-  correctBtnText: { fontSize: 18, fontWeight: '900', color: '#1A1A1A', marginTop: 2 },
+  correctBtnIcon: { fontSize: 30, color: COLORS.success, fontWeight: '900' },
+  correctBtnText: { fontSize: 17, fontWeight: '800', color: '#1A1A1A' },
 });
