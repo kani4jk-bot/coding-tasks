@@ -19,6 +19,11 @@
       },
       "package": "com.charades.mobilegame"
     },
-    "plugins": []
+    "plugins": [],
+    "extra": {
+      "eas": {
+        "projectId": "64a919d8-9535-4c0c-b10e-1656bba05377"
+      }
+    }
   }
 }
