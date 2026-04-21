@@ -1,6 +1,7 @@
 {
   "name": "Charades!",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "workspaceFolder": "/workspaces/coding-tasks/tasks/2026-04-18-charades-mobile-game",
   "forwardPorts": [8081, 19000, 19001, 19002],
   "postStartCommand": "npm install && npx expo start --tunnel",
   "customizations": {

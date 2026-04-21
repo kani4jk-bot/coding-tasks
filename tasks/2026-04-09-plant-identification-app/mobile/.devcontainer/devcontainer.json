@@ -1,6 +1,7 @@
 {
   "name": "Plant ID",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "workspaceFolder": "/workspaces/coding-tasks/tasks/2026-04-09-plant-identification-app/mobile",
   "forwardPorts": [8081, 19000, 19001, 19002],
   "postStartCommand": "npm install && npx expo start --tunnel",
   "customizations": {
