@@ -25,6 +25,16 @@
     },
     "runtimeVersion": {
       "policy": "appVersion"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "9a25eba8-106d-4c61-b8ac-cfaeb4e7f164"
+      }
+    },
+    "owner": "camputy",
+    "updates": {
+      "url": "https://u.expo.dev/9a25eba8-106d-4c61-b8ac-cfaeb4e7f164",
+      "fallbackToCacheTimeout": 0
     }
   }
 }

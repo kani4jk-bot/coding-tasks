@@ -27,7 +27,8 @@
       "package": "com.kani.vehicleid",
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.READ_MEDIA_IMAGES"
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "plugins": [
@@ -40,6 +41,16 @@
     ],
     "runtimeVersion": {
       "policy": "appVersion"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "e8f6ee23-9808-44df-b739-2b20fd30e5bb"
+      }
+    },
+    "owner": "camputy",
+    "updates": {
+      "url": "https://u.expo.dev/e8f6ee23-9808-44df-b739-2b20fd30e5bb",
+      "fallbackToCacheTimeout": 0
     }
   }
 }
