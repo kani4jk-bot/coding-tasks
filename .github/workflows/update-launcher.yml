@@ -1,0 +1,33 @@
+name: Update App Launcher
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tasks/**/app.json'
+
+jobs:
+  regenerate:
+    name: Regenerate app-launcher.html
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Regenerate launcher
+        run: node scripts/generate-launcher.js
+
+      - name: Commit if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git diff --quiet app-launcher.html || (
+            git add app-launcher.html &&
+            git commit -m "chore: auto-update app-launcher.html" &&
+            git push
+          )
