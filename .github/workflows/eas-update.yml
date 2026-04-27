@@ -1,0 +1,76 @@
+name: EAS Update (OTA)
+
+on:
+  # Push JS-only changes to an app without a full rebuild
+  workflow_dispatch:
+    inputs:
+      app:
+        description: 'App to update'
+        required: true
+        type: choice
+        options:
+          - tasks/2026-03-27-architecture-project/mobile
+          - tasks/2026-04-01-bird-song-id-mvp/mobile
+          - tasks/2026-04-09-plant-identification-app/mobile
+          - tasks/2026-04-09-vehicle-identification-app/mobile
+          - tasks/2026-04-13-travel-planner-app/mobile
+          - tasks/2026-04-18-charades-mobile-game
+      branch:
+        description: 'Update channel/branch'
+        required: true
+        default: preview
+        type: choice
+        options: [preview, production]
+      message:
+        description: 'Update message (shown in EAS dashboard)'
+        required: false
+        default: 'OTA update'
+
+  # Auto-push OTA update on changes to JS/TS/assets (not native files)
+  push:
+    branches: [main]
+    paths:
+      - 'tasks/2026-04-18-charades-mobile-game/src/**'
+      - 'tasks/2026-04-18-charades-mobile-game/App.tsx'
+      - 'tasks/2026-04-18-charades-mobile-game/assets/**'
+
+jobs:
+  update:
+    name: EAS Update
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Resolve app path
+        id: app
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "path=${{ github.event.inputs.app }}" >> $GITHUB_OUTPUT
+            echo "branch=${{ github.event.inputs.branch }}" >> $GITHUB_OUTPUT
+            echo "message=${{ github.event.inputs.message }}" >> $GITHUB_OUTPUT
+          else
+            echo "path=tasks/2026-04-18-charades-mobile-game" >> $GITHUB_OUTPUT
+            echo "branch=preview" >> $GITHUB_OUTPUT
+            echo "message=Auto-update from ${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: ${{ steps.app.outputs.path }}
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Push OTA update
+        run: |
+          eas update \
+            --branch "${{ steps.app.outputs.branch }}" \
+            --message "${{ steps.app.outputs.message }}" \
+            --non-interactive
+        working-directory: ${{ steps.app.outputs.path }}
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}

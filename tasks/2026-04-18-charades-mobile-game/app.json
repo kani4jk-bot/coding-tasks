@@ -19,6 +19,13 @@
       "package": "com.charades.mobilegame"
     },
     "plugins": [],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/64a919d8-9535-4c0c-b10e-1656bba05377",
+      "fallbackToCacheTimeout": 0
+    },
     "extra": {
       "eas": {
         "projectId": "64a919d8-9535-4c0c-b10e-1656bba05377"

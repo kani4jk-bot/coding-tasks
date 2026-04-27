@@ -25,7 +25,10 @@
         "backgroundColor": "#0D1B2A"
       },
       "package": "com.kani.vehicleid",
-      "permissions": ["android.permission.CAMERA", "android.permission.READ_MEDIA_IMAGES"]
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES"
+      ]
     },
     "plugins": [
       [
@@ -34,6 +37,9 @@
           "cameraPermission": "VehicleID uses your camera to photograph vehicles for AI identification."
         }
       ]
-    ]
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
   }
 }
