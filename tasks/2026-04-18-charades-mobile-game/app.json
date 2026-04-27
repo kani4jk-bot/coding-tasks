@@ -4,7 +4,6 @@
     "slug": "charades-mobile-game",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "splash": {
       "backgroundColor": "#6C3483"
