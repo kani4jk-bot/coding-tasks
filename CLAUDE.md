@@ -100,6 +100,23 @@ tasks/
     docs/           # optional specs or notes
 ```
 
+## Expo / EAS conventions
+
+Each mobile app has its **own unique EAS projectId** — do not reuse IDs across apps. When generating a new mobile app, create a fresh EAS project and use its projectId. Current per-app IDs:
+
+| App | projectId |
+|-----|-----------|
+| `tasks/2026-03-27-architecture-project/mobile` | `5f9a4d75-483e-4c9c-ad4a-82357a7a323a` |
+| `tasks/2026-04-01-bird-song-id-mvp/mobile` | `60b2403f-d9ca-4ddc-a28a-ca26bdb0b56b` |
+| `tasks/2026-04-09-plant-identification-app/mobile` | `9a25eba8-106d-4c61-b8ac-cfaeb4e7f164` |
+| `tasks/2026-04-09-vehicle-identification-app/mobile` | `e8f6ee23-9808-44df-b739-2b20fd30e5bb` |
+| `tasks/2026-04-13-travel-planner-app/mobile` | `f5c10a41-366d-489b-890e-c32cc9bf2803` |
+| `tasks/2026-04-18-charades-mobile-game` | `64a919d8-9535-4c0c-b10e-1656bba05377` |
+
+Each app's `app.json` must also include `expo-updates` in `package.json` for OTA updates to work at runtime. Use `checkAutomatically: "ON_LOAD"` in the `updates` block (not the deprecated `fallbackToCacheTimeout`).
+
+When adding a new mobile app to CI, update three places in `.github/workflows/eas-build.yml`: the `workflow_dispatch` options list, the `push: paths:` filter, and the APP loop in the "Resolve app path" step.
+
 ## Repo-wide conventions
 
 - Root `.gitignore` excludes: `.DS_Store`, `*.log`, `node_modules/`, `.env`, `.env.*`, `dist/`, `build/`, `__pycache__/`, `*.pyc`
