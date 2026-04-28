@@ -34,12 +34,17 @@ on:
       - 'tasks/2026-04-18-charades-mobile-game/App.tsx'
       - 'tasks/2026-04-18-charades-mobile-game/assets/**'
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   update:
     name: EAS Update
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - uses: actions/setup-node@v4
         with:

@@ -50,7 +50,7 @@
     "owner": "camputy",
     "updates": {
       "url": "https://u.expo.dev/e8f6ee23-9808-44df-b739-2b20fd30e5bb",
-      "fallbackToCacheTimeout": 0
+      "checkAutomatically": "ON_LOAD"
     }
   }
 }
