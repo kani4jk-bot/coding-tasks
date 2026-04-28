@@ -63,8 +63,16 @@ jobs:
             echo "message=Auto-update from ${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
           fi
 
+      - name: Cache npm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ steps.app.outputs.path }}-${{ hashFiles(format('{0}/package-lock.json', steps.app.outputs.path)) }}
+          restore-keys: |
+            ${{ runner.os }}-npm-${{ steps.app.outputs.path }}-
+
       - name: Install dependencies
-        run: npm install
+        run: npm ci
         working-directory: ${{ steps.app.outputs.path }}
 
       - name: Install EAS CLI
