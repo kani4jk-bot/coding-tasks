@@ -1,6 +1,6 @@
 export type Suit = 'h' | 'd' | 'c' | 's';
 export type Rank = '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'T' | 'J' | 'Q' | 'K' | 'A';
-export type Card = string; // e.g. "Ah", "Kd", "2c", "Ts"
+export type Card = `${Rank}${Suit}`;
 
 export interface Player {
   id: string;

@@ -8,6 +8,10 @@ const SUIT_SYMBOLS: Record<string, string> = {
   h: '♥', d: '♦', c: '♣', s: '♠',
 };
 
+const DIMS: Record<'sm' | 'md' | 'lg', number> = { sm: 44, md: 56, lg: 72 };
+const FONT_SIZES: Record<'sm' | 'md' | 'lg', number> = { sm: 11, md: 14, lg: 18 };
+const SUIT_SIZES: Record<'sm' | 'md' | 'lg', number> = { sm: 8, md: 10, lg: 13 };
+
 interface Props {
   card: Card | null;
   onPress: () => void;
@@ -16,9 +20,9 @@ interface Props {
 }
 
 export function CardSlot({ card, onPress, size = 'md', disabled = false }: Props) {
-  const dim = { sm: 44, md: 56, lg: 72 }[size];
-  const fontSize = { sm: 11, md: 14, lg: 18 }[size];
-  const suitSize = { sm: 8, md: 10, lg: 13 }[size];
+  const dim = DIMS[size];
+  const fontSize = FONT_SIZES[size];
+  const suitSize = SUIT_SIZES[size];
 
   if (!card) {
     return (

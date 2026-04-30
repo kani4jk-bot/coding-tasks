@@ -21,6 +21,14 @@ import { theme } from '../theme';
 type Props = NativeStackScreenProps<RootStackParamList, 'Main'>;
 
 let playerCounter = 3;
+
+const HAND_COLORS: Record<string, string> = {
+  'Royal Flush': '#f0c85a', 'Straight Flush': '#f0c85a',
+  'Four of a Kind': '#e8a030', 'Full House': '#e8a030',
+  'Flush': '#7ec8e3', 'Straight': '#7ec8e3',
+  'Three of a Kind': '#98d890', 'Two Pair': '#98d890',
+  'Pair': '#c0c0b8', 'High Card': '#7a8a80', '—': '#4a5550',
+};
 function makePlayer(n: number): Player {
   return { id: `p${n}`, name: `Player ${n}`, cards: [null, null] };
 }
@@ -201,14 +209,6 @@ export function MainScreen({ navigation }: Props) {
     return 'River';
   }, [board]);
 
-  const handColors: Record<string, string> = {
-    'Royal Flush': '#f0c85a', 'Straight Flush': '#f0c85a',
-    'Four of a Kind': '#e8a030', 'Full House': '#e8a030',
-    'Flush': '#7ec8e3', 'Straight': '#7ec8e3',
-    'Three of a Kind': '#98d890', 'Two Pair': '#98d890',
-    'Pair': '#c0c0b8', 'High Card': '#7a8a80', '—': '#4a5550',
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -262,7 +262,7 @@ export function MainScreen({ navigation }: Props) {
                 const pr = results.playerResults.find(r => r.player.id === player.id);
                 return pr ? (
                   <View style={styles.inlineResult}>
-                    <Text style={[styles.inlineHand, { color: handColors[pr.hand.name] ?? '#ccc' }]}>{pr.hand.name}</Text>
+                    <Text style={[styles.inlineHand, { color: HAND_COLORS[pr.hand.name] ?? '#ccc' }]}>{pr.hand.name}</Text>
                     {(pr.odds.winPct > 0 || pr.odds.tiePct > 0) ? <Text style={styles.inlineWin}>{pr.odds.winPct.toFixed(0)}%</Text> : null}
                   </View>
                 ) : null;
@@ -299,7 +299,7 @@ export function MainScreen({ navigation }: Props) {
                 <Text style={[styles.handRank, rank === 0 && { color: theme.colors.gold }]}>#{rank + 1}</Text>
                 <View style={styles.handInfo}>
                   <Text style={styles.handPlayerName}>{pr.player.name}</Text>
-                  <Text style={[styles.handName, { color: handColors[pr.hand.name] ?? '#ccc' }]}>{pr.hand.name}</Text>
+                  <Text style={[styles.handName, { color: HAND_COLORS[pr.hand.name] ?? '#ccc' }]}>{pr.hand.name}</Text>
                   <Text style={styles.handDesc}>{pr.hand.description}</Text>
                 </View>
                 <View style={styles.winBlock}>

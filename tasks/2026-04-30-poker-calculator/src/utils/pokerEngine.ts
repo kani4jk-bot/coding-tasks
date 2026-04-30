@@ -55,20 +55,16 @@ function getCombinations<T>(arr: T[], k: number): T[][] {
 }
 
 // ─── 5-Card Hand Evaluator ────────────────────────────────────────────────────
-function rankName(value: number): string {
-  const names: Record<number, string> = {
-    2: '2s', 3: '3s', 4: '4s', 5: '5s', 6: '6s', 7: '7s',
-    8: '8s', 9: '9s', 10: 'Tens', 11: 'Jacks', 12: 'Queens', 13: 'Kings', 14: 'Aces',
-  };
-  return names[value] ?? String(value);
-}
+const RANK_NAMES: Record<number, [string, string]> = {
+  2: ['2', '2s'], 3: ['3', '3s'], 4: ['4', '4s'], 5: ['5', '5s'],
+  6: ['6', '6s'], 7: ['7', '7s'], 8: ['8', '8s'], 9: ['9', '9s'],
+  10: ['10', 'Tens'], 11: ['Jack', 'Jacks'], 12: ['Queen', 'Queens'],
+  13: ['King', 'Kings'], 14: ['Ace', 'Aces'],
+};
 
-function rankNameSingle(value: number): string {
-  const names: Record<number, string> = {
-    2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7',
-    8: '8', 9: '9', 10: '10', 11: 'Jack', 12: 'Queen', 13: 'King', 14: 'Ace',
-  };
-  return names[value] ?? String(value);
+function rankName(value: number, plural = true): string {
+  const entry = RANK_NAMES[value];
+  return entry ? entry[plural ? 1 : 0] : String(value);
 }
 
 function score5Cards(cards: Card[]): { score: number; name: string; description: string } {
@@ -106,7 +102,7 @@ function score5Cards(cards: Card[]): { score: number; name: string; description:
     return { score: 9000000, name: 'Royal Flush', description: 'The unbeatable hand!' };
   }
   if (isFlush && isStraight) {
-    return { score: 8000000 + straightHigh, name: 'Straight Flush', description: `${rankNameSingle(straightHigh)}-high straight flush` };
+    return { score: 8000000 + straightHigh, name: 'Straight Flush', description: `${rankName(straightHigh, false)}-high straight flush` };
   }
   if (counts[0] === 4) {
     return { score: 7000000 + byCount[0] * 100 + byCount[1], name: 'Four of a Kind', description: `Quad ${rankName(byCount[0])}` };
@@ -116,10 +112,10 @@ function score5Cards(cards: Card[]): { score: number; name: string; description:
   }
   if (isFlush) {
     const fs = ranks.reduce((acc, r, i) => acc + r * Math.pow(15, 4 - i), 0);
-    return { score: 5000000 + fs, name: 'Flush', description: `${rankNameSingle(ranks[0])}-high flush` };
+    return { score: 5000000 + fs, name: 'Flush', description: `${rankName(ranks[0], false)}-high flush` };
   }
   if (isStraight) {
-    return { score: 4000000 + straightHigh, name: 'Straight', description: `${rankNameSingle(straightHigh)}-high straight` };
+    return { score: 4000000 + straightHigh, name: 'Straight', description: `${rankName(straightHigh, false)}-high straight` };
   }
   if (counts[0] === 3) {
     const ks = byCount.slice(1);
@@ -133,7 +129,7 @@ function score5Cards(cards: Card[]): { score: number; name: string; description:
     return { score: 1000000 + byCount[0] * 10000 + ks[0] * 100 + ks[1] * 10 + ks[2], name: 'Pair', description: `Pair of ${rankName(byCount[0])}` };
   }
   const hs = ranks.reduce((acc, r, i) => acc + r * Math.pow(15, 4 - i), 0);
-  return { score: hs, name: 'High Card', description: `${rankNameSingle(ranks[0])}-high` };
+  return { score: hs, name: 'High Card', description: `${rankName(ranks[0], false)}-high` };
 }
 
 export function evaluateBestHand(holeCards: (Card | null)[], boardCards: (Card | null)[]): HandResult {
@@ -147,9 +143,10 @@ export function evaluateBestHand(holeCards: (Card | null)[], boardCards: (Card |
     const result = score5Cards(combo);
     if (result.score > best.score) best = result;
   }
-  const HAND_RANKS = ['High Card', 'Pair', 'Two Pair', 'Three of a Kind', 'Straight', 'Flush', 'Full House', 'Four of a Kind', 'Straight Flush', 'Royal Flush'];
   return { rank: HAND_RANKS.indexOf(best.name), name: best.name, description: best.description, score: best.score };
 }
+
+const HAND_RANKS = ['High Card', 'Pair', 'Two Pair', 'Three of a Kind', 'Straight', 'Flush', 'Full House', 'Four of a Kind', 'Straight Flush', 'Royal Flush'];
 
 // ─── Board Probability ────────────────────────────────────────────────────────
 export interface BoardProbability {

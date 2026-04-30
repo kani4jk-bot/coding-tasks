@@ -3,7 +3,7 @@ import {
   Modal, View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView,
 } from 'react-native';
 import { Card } from '../types';
-import { getAllCards, suitColor } from '../utils/pokerEngine';
+import { suitColor } from '../utils/pokerEngine';
 import { theme } from '../theme';
 
 const SUIT_SYMBOLS: Record<string, string> = { h: '♥', d: '♦', c: '♣', s: '♠' };
@@ -22,12 +22,11 @@ interface Props {
 
 export function CardPickerModal({ visible, onSelect, onClear, onClose, usedCards, currentCard, title }: Props) {
   const [suitFilter, setSuitFilter] = useState<string | null>(null);
-  const allCards = useMemo(() => getAllCards(), []);
-  const displayCards = useMemo(() => {
-    return RANKS_DISPLAY.flatMap(r =>
+  const displayCards = useMemo(() =>
+    RANKS_DISPLAY.flatMap(r =>
       (suitFilter ? [suitFilter] : SUITS).map(s => `${r}${s}` as Card)
-    ).filter(c => allCards.includes(c));
-  }, [suitFilter, allCards]);
+    )
+  , [suitFilter]);
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -56,15 +55,14 @@ export function CardPickerModal({ visible, onSelect, onClear, onClose, usedCards
             const isCurrent = card === currentCard;
             const rankDisplay = card[0] === 'T' ? '10' : card[0];
             const color = suitColor(card);
+            const textColor = isCurrent
+              ? (color === 'red' ? '#ff8888' : '#ffffff')
+              : color === 'red' ? (isUsed ? '#884444' : theme.colors.red) : (isUsed ? '#555' : theme.colors.black);
             return (
               <TouchableOpacity key={card} onPress={() => !isUsed && onSelect(card)} disabled={isUsed}
                 style={[styles.cardBtn, isCurrent && styles.cardBtnSelected, isUsed && styles.cardBtnUsed]} activeOpacity={0.7}>
-                <Text style={[styles.cardRank, { color: color === 'red' ? (isUsed ? '#884444' : theme.colors.red) : (isUsed ? '#555' : theme.colors.black) }, isCurrent && { color: color === 'red' ? '#ff8888' : '#ffffff' }]}>
-                  {rankDisplay}
-                </Text>
-                <Text style={[styles.cardSuit, { color: color === 'red' ? (isUsed ? '#884444' : theme.colors.red) : (isUsed ? '#555' : theme.colors.black) }, isCurrent && { color: color === 'red' ? '#ff8888' : '#ffffff' }]}>
-                  {SUIT_SYMBOLS[card[1]]}
-                </Text>
+                <Text style={[styles.cardRank, { color: textColor }]}>{rankDisplay}</Text>
+                <Text style={[styles.cardSuit, { color: textColor }]}>{SUIT_SYMBOLS[card[1]]}</Text>
               </TouchableOpacity>
             );
           })}
