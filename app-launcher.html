@@ -13,76 +13,147 @@
       min-height: 100vh;
       padding: 32px 16px;
     }
-    h1 {
-      text-align: center;
-      font-size: 1.5rem;
-      font-weight: 600;
-      margin-bottom: 8px;
-      color: #f0f6fc;
+    h1 { text-align: center; font-size: 1.5rem; font-weight: 600; margin-bottom: 8px; color: #f0f6fc; }
+    .subtitle { text-align: center; color: #8b949e; font-size: 0.875rem; margin-bottom: 24px; }
+
+    .tabs {
+      display: flex; max-width: 480px; margin: 0 auto 28px;
+      background: #161b22; border: 1px solid #30363d;
+      border-radius: 12px; padding: 4px; gap: 4px;
     }
-    .subtitle {
-      text-align: center;
-      color: #8b949e;
-      font-size: 0.875rem;
-      margin-bottom: 32px;
+    .tab {
+      flex: 1; background: none; border: none; border-radius: 9px;
+      color: #8b949e; padding: 10px 8px; font-size: 13px;
+      font-weight: 600; cursor: pointer; text-align: center; line-height: 1.4; transition: all 0.15s;
     }
+    .tab small { display: block; font-weight: 400; font-size: 11px; opacity: 0.75; }
+    .tab.active { background: #21262d; color: #e6edf3; border: 1px solid #30363d; }
+
+    .token-bar {
+      max-width: 900px; margin: 0 auto 20px;
+      background: #161b22; border: 1px solid #30363d;
+      border-radius: 12px; overflow: hidden; display: none;
+    }
+    .token-bar.show { display: block; }
+    .token-toggle {
+      width: 100%; background: none; border: none; color: #e6edf3;
+      padding: 13px 16px; display: flex; align-items: center;
+      justify-content: space-between; cursor: pointer; font-size: 14px; font-weight: 600;
+    }
+    .token-body { padding: 0 16px 14px; display: none; }
+    .token-body.open { display: block; }
+    .token-label { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .token-row { display: flex; gap: 8px; }
+    .token-row input {
+      flex: 1; background: #21262d; border: 1px solid #30363d;
+      border-radius: 8px; color: #e6edf3; padding: 10px 12px;
+      font-size: 14px; font-family: monospace; min-width: 0;
+    }
+    .token-row input:focus { outline: none; border-color: #58a6ff; }
+    .btn-save {
+      background: #58a6ff; color: #0d1117; border: none;
+      border-radius: 8px; padding: 10px 18px; font-size: 14px;
+      font-weight: 700; cursor: pointer; flex-shrink: 0;
+    }
+    .token-saved { font-size: 12px; color: #3fb950; margin-top: 6px; display: none; }
+    .token-saved.show { display: block; }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 16px;
-      max-width: 900px;
-      margin: 0 auto;
+      gap: 16px; max-width: 900px; margin: 0 auto;
     }
     .card {
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 12px;
-      padding: 20px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      text-decoration: none;
-      color: inherit;
-      transition: border-color 0.15s, background 0.15s;
+      background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+      padding: 20px; display: flex; align-items: center; gap: 16px;
+      text-decoration: none; color: inherit; transition: border-color 0.15s, background 0.15s;
     }
-    .card:hover {
-      border-color: #58a6ff;
-      background: #1c2128;
+    .card:hover { border-color: #58a6ff; background: #1c2128; }
+
+    .card-p2 {
+      background: #161b22; border: 1px solid #30363d;
+      border-radius: 12px; overflow: hidden; transition: border-color 0.15s;
     }
-    .emoji {
-      font-size: 2rem;
-      flex-shrink: 0;
-      width: 48px;
-      text-align: center;
+    .card-p2:hover { border-color: #bc8cff; }
+    .card-p2-top { padding: 20px; display: flex; align-items: center; gap: 16px; }
+    .build-btn {
+      display: block; width: calc(100% - 32px); margin: 0 16px 16px;
+      background: linear-gradient(135deg, #6e40c9, #9f5de2);
+      color: white; border: none; border-radius: 9px;
+      padding: 12px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.15s;
     }
+    .build-btn:active { opacity: 0.75; }
+    .build-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .status-area {
+      margin: 0 16px 14px; padding: 11px 13px;
+      border-radius: 9px; font-size: 13px; line-height: 1.6; display: none;
+    }
+    .status-area.show { display: block; }
+    .status-area.info    { background: rgba(88,166,255,0.08); border: 1px solid rgba(88,166,255,0.25); color: #58a6ff; }
+    .status-area.success { background: rgba(63,185,80,0.08);  border: 1px solid rgba(63,185,80,0.25);  color: #3fb950; }
+    .status-area.error   { background: rgba(248,81,73,0.08);  border: 1px solid rgba(248,81,73,0.25);  color: #f85149; }
+    .status-area.building{ background: rgba(188,140,255,0.08);border: 1px solid rgba(188,140,255,0.25);color: #bc8cff; }
+    .status-link { color: #58a6ff; text-decoration: none; font-weight: 600; }
+
+    .progress-bar { height: 4px; background: #30363d; border-radius: 2px; margin-top: 8px; overflow: hidden; }
+    .progress-fill {
+      height: 100%; background: #bc8cff; border-radius: 2px;
+      width: 5%; transition: width 1s ease; animation: ppulse 2s ease-in-out infinite;
+    }
+    @keyframes ppulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+    .spinner {
+      display: inline-block; width: 13px; height: 13px;
+      border: 2px solid currentColor; border-top-color: transparent;
+      border-radius: 50%; animation: spin 0.75s linear infinite;
+      vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .emoji { font-size: 2rem; flex-shrink: 0; width: 48px; text-align: center; }
     .info { flex: 1; min-width: 0; }
-    .name {
-      font-weight: 600;
-      font-size: 1rem;
-      margin-bottom: 4px;
-      color: #f0f6fc;
-    }
-    .path {
-      font-size: 0.75rem;
-      color: #8b949e;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .arrow {
-      color: #58a6ff;
-      font-size: 1.25rem;
-      flex-shrink: 0;
-    }
+    .name { font-weight: 600; font-size: 1rem; margin-bottom: 4px; color: #f0f6fc; }
+    .path { font-size: 0.75rem; color: #8b949e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .arrow { color: #58a6ff; font-size: 1.25rem; flex-shrink: 0; }
   </style>
 </head>
 <body>
+
   <h1>📱 App Launcher</h1>
-  <p class="subtitle">Open any app in GitHub Codespaces — scan the QR code in Expo Go</p>
+  <p class="subtitle" id="subtitle">Open any app in GitHub Codespaces — scan the QR code in Expo Go</p>
+
+  <div class="tabs">
+    <button class="tab active" id="tab1" onclick="setPipeline(1)">
+      🚀 Pipeline 1
+      <small>Expo Go · Codespaces</small>
+    </button>
+    <button class="tab" id="tab2" onclick="setPipeline(2)">
+      📦 Pipeline 2
+      <small>EAS Build · Install</small>
+    </button>
+  </div>
+
+  <div class="token-bar" id="token-bar">
+    <button class="token-toggle" onclick="toggleToken()">
+      <span>🔑 Expo Token</span>
+      <span id="token-arrow">▼</span>
+    </button>
+    <div class="token-body" id="token-body">
+      <div class="token-label">Required to trigger EAS builds</div>
+      <div class="token-row">
+        <input type="password" id="expo-token-input" placeholder="expo_..." />
+        <button class="btn-save" onclick="saveExpoToken()">Save</button>
+      </div>
+      <div class="token-saved" id="token-saved">✓ Token saved for this session</div>
+    </div>
+  </div>
+
   <div class="grid" id="grid"></div>
 
   <script>
     const REPO = 'kani4jk-bot/coding-tasks';
+    const EAS_PROJECT_ID = '64a919d8-9535-4c0c-b10e-1656bba05377';
 
     // AUTO-GENERATED-APPS-START
     const APPS = [
@@ -96,12 +167,45 @@
     ];
     // AUTO-GENERATED-APPS-END
 
-    const grid = document.getElementById('grid');
+    let pipeline = 1;
+    let expoToken = '';
 
-    APPS.forEach(app => {
+    function toggleToken() {
+      const body = document.getElementById('token-body');
+      const arrow = document.getElementById('token-arrow');
+      body.classList.toggle('open');
+      arrow.textContent = body.classList.contains('open') ? '▲' : '▼';
+    }
+
+    function saveExpoToken() {
+      const val = document.getElementById('expo-token-input').value.trim();
+      if (!val) return;
+      expoToken = val;
+      document.getElementById('expo-token-input').value = '';
+      document.getElementById('expo-token-input').placeholder = '••••••••••••••';
+      document.getElementById('token-saved').classList.add('show');
+    }
+
+    function setPipeline(p) {
+      pipeline = p;
+      document.getElementById('tab1').classList.toggle('active', p === 1);
+      document.getElementById('tab2').classList.toggle('active', p === 2);
+      document.getElementById('token-bar').classList.toggle('show', p === 2);
+      document.getElementById('subtitle').textContent = p === 1
+        ? 'Open any app in GitHub Codespaces — scan the QR code in Expo Go'
+        : 'Trigger an EAS cloud build — get an installable app link (~10 min)';
+      renderGrid();
+    }
+
+    function renderGrid() {
+      const grid = document.getElementById('grid');
+      grid.innerHTML = '';
+      APPS.forEach(app => pipeline === 1 ? renderP1Card(grid, app) : renderP2Card(grid, app));
+    }
+
+    function renderP1Card(grid, app) {
       const devcontainerPath = encodeURIComponent(`${app.path}/.devcontainer/devcontainer.json`);
       const url = `https://codespaces.new/${REPO}?devcontainer_path=${devcontainerPath}`;
-
       const a = document.createElement('a');
       a.className = 'card';
       a.href = url;
@@ -116,7 +220,119 @@
         <div class="arrow">→</div>
       `;
       grid.appendChild(a);
-    });
+    }
+
+    function renderP2Card(grid, app) {
+      const div = document.createElement('div');
+      div.className = 'card-p2';
+      div.id = `card-${app.slug}`;
+      div.innerHTML = `
+        <div class="card-p2-top">
+          <div class="emoji">${app.emoji}</div>
+          <div class="info">
+            <div class="name">${app.name}</div>
+            <div class="path">${app.path}</div>
+          </div>
+        </div>
+        <button class="build-btn" id="btn-${app.slug}" onclick="triggerBuild('${app.slug}')">
+          📦 Start EAS Build
+        </button>
+        <div class="status-area" id="status-${app.slug}"></div>
+      `;
+      grid.appendChild(div);
+    }
+
+    async function triggerBuild(slug) {
+      if (!expoToken) {
+        showStatus(slug, 'error', '⚠️ Save your Expo token first (tap 🔑 Expo Token above)');
+        return;
+      }
+      const btn = document.getElementById(`btn-${slug}`);
+      btn.disabled = true;
+      showStatus(slug, 'info', '<span class="spinner"></span> Contacting EAS…');
+
+      try {
+        const mutation = `
+          mutation CreateBuild($appId: String!, $platform: AppPlatform!, $profile: String!) {
+            build {
+              createBuild(appId: $appId, platform: $platform, buildProfile: $profile) {
+                id status artifacts { buildUrl }
+              }
+            }
+          }
+        `;
+        const res = await fetch('https://api.expo.dev/graphql', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${expoToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: mutation,
+            variables: { appId: EAS_PROJECT_ID, platform: 'ANDROID', profile: 'preview' }
+          })
+        });
+        const data = await res.json();
+        if (data.errors) throw new Error(data.errors[0].message);
+
+        const build = data?.data?.build?.createBuild;
+        if (!build?.id) throw new Error('No build ID returned — check your Expo token');
+
+        showStatus(slug, 'building',
+          `<span class="spinner"></span> Build queued! (${build.id.slice(0,8)}…)<br>
+           <div class="progress-bar"><div class="progress-fill" id="prog-${slug}"></div></div>
+           <small style="color:#8b949e;display:block;margin-top:6px">~10 min — checking every 30 s</small>
+           <a class="status-link" href="https://expo.dev/projects/${EAS_PROJECT_ID}/builds/${build.id}" target="_blank">Watch on expo.dev →</a>`
+        );
+        pollBuild(slug, build.id, 0);
+      } catch (err) {
+        showStatus(slug, 'error',
+          `❌ ${err.message}<br>
+           <small style="color:#8b949e">You can also build from <a class="status-link" href="https://expo.dev" target="_blank">expo.dev</a></small>`
+        );
+        btn.disabled = false;
+      }
+    }
+
+    async function pollBuild(slug, buildId, attempt) {
+      if (attempt > 80) return;
+      const query = `query BuildStatus($buildId: ID!) { build(buildId: $buildId) { id status artifacts { buildUrl } } }`;
+      try {
+        const res = await fetch('https://api.expo.dev/graphql', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${expoToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, variables: { buildId } })
+        });
+        const data = await res.json();
+        const build = data?.data?.build;
+        if (!build) return;
+
+        const prog = document.getElementById(`prog-${slug}`);
+        if (prog) prog.style.width = Math.min(5 + attempt * 1.3, 90) + '%';
+
+        if (build.status === 'FINISHED' && build.artifacts?.buildUrl) {
+          document.getElementById(`btn-${slug}`).disabled = false;
+          showStatus(slug, 'success',
+            `✅ Build complete!<br><a class="status-link" href="${build.artifacts.buildUrl}" target="_blank">📥 Download & Install →</a>`
+          );
+        } else if (['ERRORED','CANCELED'].includes(build.status)) {
+          document.getElementById(`btn-${slug}`).disabled = false;
+          showStatus(slug, 'error',
+            `❌ Build ${build.status.toLowerCase()}. <a class="status-link" href="https://expo.dev/projects/${EAS_PROJECT_ID}/builds/${buildId}" target="_blank">See details →</a>`
+          );
+        } else {
+          setTimeout(() => pollBuild(slug, buildId, attempt + 1), 30000);
+        }
+      } catch {
+        setTimeout(() => pollBuild(slug, buildId, attempt + 1), 30000);
+      }
+    }
+
+    function showStatus(slug, type, html) {
+      const el = document.getElementById(`status-${slug}`);
+      if (!el) return;
+      el.className = `status-area show ${type}`;
+      el.innerHTML = html;
+    }
+
+    renderGrid();
   </script>
 </body>
 </html>
