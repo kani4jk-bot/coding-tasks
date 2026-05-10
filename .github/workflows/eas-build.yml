@@ -92,7 +92,7 @@ jobs:
             ${{ runner.os }}-npm-${{ steps.app.outputs.path }}-
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
         working-directory: ${{ steps.app.outputs.path }}
 
       - name: Type check
