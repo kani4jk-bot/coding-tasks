@@ -13,7 +13,8 @@
       "bundleIdentifier": "com.kani.birdsongid",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Birdsong ID records short clips so it can identify birds from their songs.",
-        "NSLocationWhenInUseUsageDescription": "Birdsong ID can attach an approximate nearby region to improve bird identification when you opt in, without sending a precise pin."
+        "NSLocationWhenInUseUsageDescription": "Birdsong ID can attach an approximate nearby region to improve bird identification when you opt in, without sending a precise pin.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {

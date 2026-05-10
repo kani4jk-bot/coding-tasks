@@ -16,7 +16,8 @@
       "bundleIdentifier": "com.kani.vehicleid",
       "infoPlist": {
         "NSCameraUsageDescription": "VehicleID uses your camera to photograph vehicles for AI identification.",
-        "NSPhotoLibraryUsageDescription": "VehicleID uses your photo library to select vehicle photos for identification."
+        "NSPhotoLibraryUsageDescription": "VehicleID uses your photo library to select vehicle photos for identification.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {

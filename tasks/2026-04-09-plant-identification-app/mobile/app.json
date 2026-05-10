@@ -13,7 +13,8 @@
       "bundleIdentifier": "com.kani.plantid",
       "infoPlist": {
         "NSCameraUsageDescription": "Plant ID uses your camera to photograph plants for identification.",
-        "NSPhotoLibraryUsageDescription": "Plant ID uses your photo library to select plant photos for identification."
+        "NSPhotoLibraryUsageDescription": "Plant ID uses your photo library to select plant photos for identification.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
