@@ -10,7 +10,7 @@ const RANK_VALUES: Record<string, number> = {
 };
 
 export function getAllCards(): Card[] {
-  return RANKS.flatMap(r => SUITS.map(s => `${r}${s}`));
+  return RANKS.flatMap(r => SUITS.map(s => `${r}${s}` as Card));
 }
 
 export function cardRank(card: Card): number {

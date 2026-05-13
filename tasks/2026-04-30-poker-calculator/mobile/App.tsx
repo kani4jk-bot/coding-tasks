@@ -21,7 +21,7 @@ export default function App() {
         screenOptions={{
           headerStyle: { backgroundColor: theme.colors.surface },
           headerTintColor: theme.colors.gold,
-          headerTitleStyle: { fontWeight: '700', letterSpacing: 1 },
+          headerTitleStyle: { fontWeight: '700' },
           contentStyle: { backgroundColor: theme.colors.background },
           headerShadowVisible: false,
         }}
