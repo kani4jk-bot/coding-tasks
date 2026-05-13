@@ -12,6 +12,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.kani.homevisualizer",
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "Home Visualizer uses your camera to photograph rooms for AI editing.",
         "NSPhotoLibraryUsageDescription": "Home Visualizer uses your photo library to select room photos for AI editing."
       }

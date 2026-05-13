@@ -12,6 +12,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.kani.plantid",
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "Plant ID uses your camera to photograph plants for identification.",
         "NSPhotoLibraryUsageDescription": "Plant ID uses your photo library to select plant photos for identification."
       }
