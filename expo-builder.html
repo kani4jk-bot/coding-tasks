@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expo Builder</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      min-height: 100vh;
+      padding: 32px 16px 64px;
+    }
+
+    h1 { text-align: center; font-size: 1.5rem; font-weight: 600; margin-bottom: 6px; color: #f0f6fc; }
+    .subtitle { text-align: center; color: #8b949e; font-size: 0.875rem; margin-bottom: 32px; }
+
+    .section {
+      max-width: 720px; margin: 0 auto 24px;
+      background: #161b22; border: 1px solid #30363d;
+      border-radius: 12px; padding: 24px;
+    }
+    .section-title {
+      font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.6px; color: #8b949e; margin-bottom: 14px;
+    }
+
+    textarea, input[type="text"], input[type="password"] {
+      width: 100%; background: #21262d; border: 1px solid #30363d;
+      border-radius: 8px; color: #e6edf3; padding: 11px 13px;
+      font-size: 14px; font-family: inherit; resize: vertical;
+    }
+    textarea:focus, input[type="text"]:focus, input[type="password"]:focus {
+      outline: none; border-color: #58a6ff;
+    }
+    textarea { min-height: 90px; }
+
+    label { display: block; font-size: 12px; color: #8b949e; margin-bottom: 5px; margin-top: 14px; }
+    label:first-child { margin-top: 0; }
+
+    .row { display: flex; gap: 10px; }
+    .row > * { flex: 1; }
+
+    .btn {
+      border: none; border-radius: 8px; padding: 11px 18px;
+      font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn:active { opacity: 0.75; }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-primary { background: #58a6ff; color: #0d1117; }
+    .btn-purple  { background: linear-gradient(135deg, #6e40c9, #9f5de2); color: #fff; }
+    .btn-green   { background: #3fb950; color: #0d1117; }
+    .btn-full    { display: block; width: 100%; margin-top: 16px; }
+
+    .spinner {
+      display: inline-block; width: 13px; height: 13px;
+      border: 2px solid currentColor; border-top-color: transparent;
+      border-radius: 50%; animation: spin 0.75s linear infinite;
+      vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .hidden { display: none !important; }
+
+    /* Scaffold preview */
+    .preview-section { max-width: 720px; margin: 0 auto 24px; }
+    .preview-card {
+      background: #161b22; border: 1px solid #3fb950;
+      border-radius: 12px; padding: 24px;
+    }
+    .preview-app-name {
+      font-size: 1.3rem; font-weight: 700; color: #f0f6fc; margin-bottom: 3px;
+    }
+    .preview-slug { font-size: 0.8rem; color: #8b949e; font-family: monospace; margin-bottom: 10px; }
+    .preview-desc { font-size: 0.9rem; color: #c9d1d9; margin-bottom: 18px; line-height: 1.6; }
+
+    .preview-label {
+      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.6px; color: #8b949e; margin-bottom: 8px; margin-top: 16px;
+    }
+    .screen-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .screen-item {
+      background: #21262d; border-radius: 7px; padding: 9px 12px;
+      font-size: 13px; display: flex; gap: 10px; align-items: baseline;
+    }
+    .screen-filename { font-family: monospace; color: #79c0ff; flex-shrink: 0; }
+    .screen-desc { color: #8b949e; font-size: 12px; }
+
+    .dep-list {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .dep-chip {
+      background: #21262d; border: 1px solid #30363d;
+      border-radius: 20px; padding: 3px 10px;
+      font-size: 12px; font-family: monospace; color: #d2a8ff;
+    }
+
+    details.code-block {
+      background: #21262d; border: 1px solid #30363d;
+      border-radius: 8px; margin-top: 8px; overflow: hidden;
+    }
+    details.code-block summary {
+      padding: 10px 13px; font-size: 13px; font-weight: 600;
+      color: #8b949e; cursor: pointer; user-select: none;
+      list-style: none; display: flex; align-items: center; gap: 6px;
+    }
+    details.code-block summary::before { content: '▶'; font-size: 10px; transition: transform 0.15s; }
+    details.code-block[open] summary::before { transform: rotate(90deg); }
+    details.code-block pre {
+      padding: 14px; font-size: 12px; font-family: monospace;
+      color: #e6edf3; overflow-x: auto; white-space: pre;
+      border-top: 1px solid #30363d; line-height: 1.6; max-height: 300px; overflow-y: auto;
+    }
+
+    /* Build form */
+    .token-row { display: flex; gap: 8px; }
+    .token-row input { flex: 1; }
+    .btn-save {
+      background: #58a6ff; color: #0d1117; border: none;
+      border-radius: 8px; padding: 10px 18px; font-size: 14px;
+      font-weight: 700; cursor: pointer; flex-shrink: 0;
+    }
+    .token-saved { font-size: 12px; color: #3fb950; margin-top: 6px; display: none; }
+    .token-saved.show { display: block; }
+
+    /* Status areas */
+    .status-area {
+      padding: 11px 13px; border-radius: 8px;
+      font-size: 13px; line-height: 1.6; margin-top: 12px; display: none;
+    }
+    .status-area.show { display: block; }
+    .status-area.info    { background: rgba(88,166,255,0.08); border: 1px solid rgba(88,166,255,0.25); color: #58a6ff; }
+    .status-area.success { background: rgba(63,185,80,0.08);  border: 1px solid rgba(63,185,80,0.25);  color: #3fb950; }
+    .status-area.error   { background: rgba(248,81,73,0.08);  border: 1px solid rgba(248,81,73,0.25);  color: #f85149; }
+    .status-area.building{ background: rgba(188,140,255,0.08);border: 1px solid rgba(188,140,255,0.25);color: #bc8cff; }
+    .status-link { color: #58a6ff; text-decoration: none; font-weight: 600; }
+
+    /* APPS reminder callout */
+    .callout {
+      background: rgba(255, 196, 0, 0.07); border: 1px solid rgba(255, 196, 0, 0.3);
+      border-radius: 9px; padding: 14px 16px; margin-top: 14px;
+      font-size: 13px; line-height: 1.7; color: #e6ceaa;
+    }
+    .callout code {
+      background: #21262d; border-radius: 4px; padding: 1px 6px;
+      font-family: monospace; font-size: 12px; color: #79c0ff;
+    }
+
+    /* Error explainer */
+    .error-section {
+      max-width: 720px; margin: 0 auto 24px;
+      border: 1px solid #30363d; border-radius: 12px; overflow: hidden;
+    }
+    .error-summary {
+      width: 100%; background: #161b22; border: none; color: #e6edf3;
+      padding: 15px 20px; display: flex; align-items: center;
+      justify-content: space-between; cursor: pointer; font-size: 14px;
+      font-weight: 600; list-style: none;
+    }
+    .error-summary::-webkit-details-marker { display: none; }
+    .error-section[open] .error-summary { border-bottom: 1px solid #30363d; }
+    .error-body { background: #161b22; padding: 20px; }
+    .error-result {
+      margin-top: 14px; padding: 14px; border-radius: 8px;
+      background: #21262d; border: 1px solid #30363d;
+      font-size: 13px; line-height: 1.7; color: #e6edf3; display: none;
+    }
+    .error-result.show { display: block; }
+    .error-result h4 { color: #f85149; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+    .error-result h4.fix { color: #3fb950; margin-top: 12px; }
+    .error-result p { margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+  <h1>🏗️ Expo Builder</h1>
+  <p class="subtitle">AI-powered Expo app scaffolding + EAS build trigger</p>
+
+  <!-- ── 1. Describe your app ── -->
+  <div class="section" id="section-describe">
+    <div class="section-title">✦ Describe your app</div>
+    <textarea
+      id="app-description"
+      placeholder="e.g. A travel planner with a map view, saved trips, and a search screen"
+    ></textarea>
+    <button class="btn btn-primary btn-full" id="btn-generate" onclick="generateScaffold()">
+      Generate Scaffold
+    </button>
+    <div class="status-area" id="status-generate"></div>
+  </div>
+
+  <!-- ── 2. Scaffold preview ── -->
+  <div class="preview-section hidden" id="section-preview">
+    <div class="preview-card">
+      <div class="preview-app-name" id="prev-name"></div>
+      <div class="preview-slug" id="prev-slug"></div>
+      <div class="preview-desc" id="prev-desc"></div>
+
+      <div class="preview-label">Screens</div>
+      <ul class="screen-list" id="prev-screens"></ul>
+
+      <div class="preview-label">npm dependencies</div>
+      <div class="dep-list" id="prev-deps"></div>
+
+      <div class="preview-label">app.json</div>
+      <details class="code-block" id="prev-appjson-wrap">
+        <summary>app.json</summary>
+        <pre id="prev-appjson"></pre>
+      </details>
+
+      <div class="preview-label">devcontainer.json</div>
+      <details class="code-block" id="prev-devcontainer-wrap">
+        <summary>.devcontainer/devcontainer.json</summary>
+        <pre id="prev-devcontainer"></pre>
+      </details>
+
+      <button class="btn btn-green btn-full" onclick="continueTooBuild()">
+        Looks good — continue to build →
+      </button>
+    </div>
+  </div>
+
+  <!-- ── 3. Build form ── -->
+  <div class="section" id="section-build">
+    <div class="section-title">⚡ EAS Build</div>
+
+    <div class="row">
+      <div>
+        <label for="build-app-name">App name</label>
+        <input type="text" id="build-app-name" placeholder="My App" />
+      </div>
+      <div>
+        <label for="build-slug">Slug</label>
+        <input type="text" id="build-slug" placeholder="my-app" />
+      </div>
+    </div>
+
+    <label>App path in repo</label>
+    <input type="text" id="build-path" placeholder="tasks/2026-05-13-my-app/mobile" />
+
+    <label style="margin-top:16px">🔑 GitHub Token <span style="color:#8b949e;font-weight:400">(repo scope)</span></label>
+    <div class="token-row">
+      <input type="password" id="github-token-input" placeholder="ghp_..." />
+      <button class="btn-save" onclick="saveToken()">Save</button>
+    </div>
+    <div class="token-saved" id="token-saved">✓ Token saved for this session</div>
+
+    <button class="btn btn-purple btn-full" id="btn-build" onclick="triggerBuild()">
+      📦 Start EAS Build
+    </button>
+    <div class="status-area" id="status-build"></div>
+
+    <!-- APPS array reminder — shown after build triggered -->
+    <div class="callout hidden" id="apps-reminder">
+      <strong>📋 Remember to add this app to <code>app-launcher.html</code></strong><br>
+      Inside the <code>APPS</code> array, add:<br>
+      <code id="reminder-snippet"></code>
+    </div>
+  </div>
+
+  <!-- ── 4. Error explainer ── -->
+  <details class="error-section">
+    <summary class="error-summary">
+      <span>🔍 Paste build error</span>
+      <span style="color:#8b949e;font-weight:400;font-size:13px">EAS log → root cause + fix</span>
+    </summary>
+    <div class="error-body">
+      <label for="error-log">Paste your EAS build log or error output:</label>
+      <textarea id="error-log" style="min-height:120px;margin-top:6px" placeholder="Copy the relevant section from your EAS build log…"></textarea>
+      <button class="btn btn-primary" style="margin-top:10px" id="btn-explain" onclick="explainError()">
+        Analyze Error
+      </button>
+      <div class="error-result" id="error-result"></div>
+    </div>
+  </details>
+
+  <script>
+    const REPO = 'kani4jk-bot/coding-tasks';
+    const GH_API = 'https://api.github.com';
+    const GH_HEADERS = () => ({
+      'Authorization': `Bearer ${githubToken}`,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    });
+
+    let githubToken = '';
+    let scaffoldData = null;
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    function setStatus(id, type, html) {
+      const el = document.getElementById(id);
+      el.className = `status-area show ${type}`;
+      el.innerHTML = html;
+    }
+
+    function clearStatus(id) {
+      const el = document.getElementById(id);
+      el.className = 'status-area';
+      el.innerHTML = '';
+    }
+
+    async function callClaude(systemPrompt, userContent) {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4096,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userContent }],
+        }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error?.message || `API error ${response.status}`);
+      }
+      const data = await response.json();
+      return data.content?.find(b => b.type === 'text')?.text || '';
+    }
+
+    // ── 1. Generate Scaffold ──────────────────────────────────────────────────
+
+    const SCAFFOLD_SYSTEM = `You are an Expo/React Native app architect. Given a description, output ONLY a JSON object (no markdown, no preamble) with this exact shape:
+{
+  "appName": string,
+  "slug": string,
+  "description": string,
+  "screens": [{ "name": string, "filename": string, "description": string }],
+  "dependencies": [string],
+  "appJson": { ...full app.json contents... },
+  "devcontainer": { ...full .devcontainer/devcontainer.json contents... }
+}
+The devcontainer must always include: node 20, the Expo CLI, and EAS CLI pre-installed.
+The appJson must include ios.infoPlist.ITSAppUsesNonExemptEncryption: false and a placeholder bundleIdentifier.`;
+
+    async function generateScaffold() {
+      const desc = document.getElementById('app-description').value.trim();
+      if (!desc) return;
+
+      const btn = document.getElementById('btn-generate');
+      btn.disabled = true;
+      setStatus('status-generate', 'info', '<span class="spinner"></span> Generating scaffold with Claude…');
+      document.getElementById('section-preview').classList.add('hidden');
+
+      try {
+        const text = await callClaude(SCAFFOLD_SYSTEM, desc);
+        scaffoldData = JSON.parse(text);
+        renderPreview(scaffoldData);
+        clearStatus('status-generate');
+        document.getElementById('section-preview').classList.remove('hidden');
+        document.getElementById('section-preview').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (err) {
+        setStatus('status-generate', 'error', `❌ ${err.message}`);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function renderPreview(d) {
+      document.getElementById('prev-name').textContent = d.appName;
+      document.getElementById('prev-slug').textContent = d.slug;
+      document.getElementById('prev-desc').textContent = d.description;
+
+      const screenList = document.getElementById('prev-screens');
+      screenList.innerHTML = (d.screens || []).map(s => `
+        <li class="screen-item">
+          <span class="screen-filename">${s.filename}</span>
+          <span class="screen-desc">${s.description}</span>
+        </li>
+      `).join('');
+
+      const depList = document.getElementById('prev-deps');
+      depList.innerHTML = (d.dependencies || []).map(dep =>
+        `<span class="dep-chip">${dep}</span>`
+      ).join('');
+
+      document.getElementById('prev-appjson').textContent = JSON.stringify(d.appJson, null, 2);
+      document.getElementById('prev-devcontainer').textContent = JSON.stringify(d.devcontainer, null, 2);
+    }
+
+    // ── 2. Continue to build ──────────────────────────────────────────────────
+
+    function continueTooBuild() {
+      if (!scaffoldData) return;
+      document.getElementById('build-app-name').value = scaffoldData.appName || '';
+      document.getElementById('build-slug').value = scaffoldData.slug || '';
+
+      const today = new Date().toISOString().slice(0, 10);
+      document.getElementById('build-path').value =
+        `tasks/${today}-${scaffoldData.slug || 'my-app'}/mobile`;
+
+      document.getElementById('section-build').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ── 3. Build trigger ──────────────────────────────────────────────────────
+
+    function saveToken() {
+      const val = document.getElementById('github-token-input').value.trim();
+      if (!val) return;
+      githubToken = val;
+      document.getElementById('github-token-input').value = '';
+      document.getElementById('github-token-input').placeholder = '••••••••••••••';
+      document.getElementById('token-saved').classList.add('show');
+    }
+
+    async function triggerBuild() {
+      if (!githubToken) {
+        setStatus('status-build', 'error', '⚠️ Save your GitHub token first');
+        return;
+      }
+      const appName = document.getElementById('build-app-name').value.trim();
+      const slug    = document.getElementById('build-slug').value.trim();
+      const path    = document.getElementById('build-path').value.trim();
+      if (!slug || !path) {
+        setStatus('status-build', 'error', '⚠️ Fill in slug and app path');
+        return;
+      }
+
+      const btn = document.getElementById('btn-build');
+      btn.disabled = true;
+      setStatus('status-build', 'info', '<span class="spinner"></span> Triggering GitHub Actions workflow…');
+      document.getElementById('apps-reminder').classList.add('hidden');
+
+      const triggerTime = new Date().toISOString();
+      try {
+        const res = await fetch(`${GH_API}/repos/${REPO}/actions/workflows/eas-build.yml/dispatches`, {
+          method: 'POST',
+          headers: { ...GH_HEADERS(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ref: 'main',
+            inputs: { app: path, profile: 'preview', platform: 'all' },
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || `GitHub API error ${res.status}`);
+        }
+
+        setStatus('status-build', 'building',
+          `<span class="spinner"></span> Workflow triggered — finding run…<br>
+           <small style="color:#8b949e">Checking every 15 s</small>`
+        );
+
+        showAppsReminder(appName, slug, path);
+        pollForRun(slug, path, triggerTime, 0);
+      } catch (err) {
+        setStatus('status-build', 'error', `❌ ${err.message}`);
+        btn.disabled = false;
+      }
+    }
+
+    function showAppsReminder(appName, slug, path) {
+      const emoji = '📱';
+      const snippet = `{ name: '${appName}', emoji: '${emoji}', path: '${path}', slug: '${slug}' }`;
+      document.getElementById('reminder-snippet').textContent = snippet;
+      document.getElementById('apps-reminder').classList.remove('hidden');
+    }
+
+    async function pollForRun(slug, path, since, attempt) {
+      if (attempt > 20) {
+        setStatus('status-build', 'error',
+          `❌ Could not find workflow run.<br>
+           <a class="status-link" href="https://github.com/${REPO}/actions/workflows/eas-build.yml" target="_blank">Check GitHub Actions →</a>`
+        );
+        document.getElementById('btn-build').disabled = false;
+        return;
+      }
+      try {
+        const res = await fetch(
+          `${GH_API}/repos/${REPO}/actions/workflows/eas-build.yml/runs?event=workflow_dispatch&per_page=5`,
+          { headers: GH_HEADERS() }
+        );
+        const data = await res.json();
+        const sinceMs = new Date(since).getTime();
+        const run = data.workflow_runs?.find(r => new Date(r.created_at).getTime() >= sinceMs);
+        if (run) {
+          setStatus('status-build', 'building',
+            `<span class="spinner"></span> Building… (Run #${run.run_number})<br>
+             <small style="color:#8b949e;display:block;margin-top:4px">~10 min — EAS Build running in CI</small>
+             <a class="status-link" href="${run.html_url}" target="_blank">Watch on GitHub Actions →</a>`
+          );
+          pollRunStatus(slug, path, run.id, run.html_url, 0);
+        } else {
+          setTimeout(() => pollForRun(slug, path, since, attempt + 1), 15000);
+        }
+      } catch {
+        setTimeout(() => pollForRun(slug, path, since, attempt + 1), 15000);
+      }
+    }
+
+    async function pollRunStatus(slug, path, runId, runUrl, attempt) {
+      if (attempt > 80) return;
+      try {
+        const res = await fetch(`${GH_API}/repos/${REPO}/actions/runs/${runId}`, { headers: GH_HEADERS() });
+        const run = await res.json();
+        if (run.status === 'completed') {
+          document.getElementById('btn-build').disabled = false;
+          if (run.conclusion === 'success') {
+            setStatus('status-build', 'success',
+              `✅ Build complete!<br>
+               <a class="status-link" href="https://expo.dev/accounts/camputy/projects" target="_blank">📥 Get install link on expo.dev →</a><br>
+               <a class="status-link" href="${runUrl}" target="_blank" style="font-size:12px;opacity:0.7">View run →</a>`
+            );
+          } else {
+            setStatus('status-build', 'error',
+              `❌ Build ${run.conclusion}.<br>
+               <a class="status-link" href="${runUrl}" target="_blank">See details on GitHub →</a>`
+            );
+          }
+        } else {
+          setTimeout(() => pollRunStatus(slug, path, runId, runUrl, attempt + 1), 30000);
+        }
+      } catch {
+        setTimeout(() => pollRunStatus(slug, path, runId, runUrl, attempt + 1), 30000);
+      }
+    }
+
+    // ── 4. Error explainer ────────────────────────────────────────────────────
+
+    const ERROR_SYSTEM = `You are an Expo/EAS build expert. Analyze this build log and respond with:
+1. Root cause (one sentence)
+2. Fix (clear step-by-step instructions)
+Be concise and direct.`;
+
+    async function explainError() {
+      const log = document.getElementById('error-log').value.trim();
+      if (!log) return;
+
+      const btn = document.getElementById('btn-explain');
+      const result = document.getElementById('error-result');
+      btn.disabled = true;
+      result.classList.remove('show');
+      result.innerHTML = '<span class="spinner"></span> Analyzing…';
+      result.classList.add('show');
+
+      try {
+        const text = await callClaude(ERROR_SYSTEM, log);
+        const lines = text.split('\n').filter(l => l.trim());
+
+        let rootCause = '';
+        let fixLines = [];
+        let inFix = false;
+
+        for (const line of lines) {
+          const stripped = line.replace(/^\d+\.\s*/, '').replace(/^\*+\s*/, '').trim();
+          if (/root cause/i.test(line)) {
+            rootCause = stripped.replace(/root cause[:\s]*/i, '').trim();
+            inFix = false;
+          } else if (/^fix|^step|^2\./i.test(line)) {
+            inFix = true;
+            const fixText = stripped.replace(/^fix[:\s]*/i, '').trim();
+            if (fixText) fixLines.push(fixText);
+          } else if (inFix && stripped) {
+            fixLines.push(stripped);
+          } else if (!inFix && !rootCause && stripped) {
+            rootCause = stripped;
+          }
+        }
+
+        if (!rootCause && !fixLines.length) {
+          result.innerHTML = `<p>${text}</p>`;
+        } else {
+          result.innerHTML = `
+            <h4>Root Cause</h4>
+            <p>${rootCause || '—'}</p>
+            <h4 class="fix">Fix</h4>
+            ${fixLines.map((l, i) => `<p>${i + 1 <= 1 && /^\d/.test(l) ? '' : ''}${l}</p>`).join('')}
+          `;
+        }
+      } catch (err) {
+        result.innerHTML = `<p style="color:#f85149">❌ ${err.message}</p>`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
