@@ -1,0 +1,15 @@
+{
+  "name": "Poker Calculator",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "workspaceFolder": "/workspaces/coding-tasks/tasks/2026-04-30-poker-calculator/mobile",
+  "forwardPorts": [8081, 19000, 19001, 19002],
+  "postCreateCommand": "npm install && npx expo install expo-updates && npm install -g eas-cli && npx tsc --noEmit",
+  "postStartCommand": "npx expo start --tunnel",
+  "customizations": {
+    "vscode": { "extensions": ["dbaeumer.vscode-eslint"] }
+  },
+  "remoteEnv": {
+    "EXPO_NO_TELEMETRY": "1",
+    "EXPO_TOKEN": "${localEnv:EXPO_TOKEN}"
+  }
+}

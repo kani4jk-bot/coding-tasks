@@ -5,276 +5,495 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Expo Builder</title>
   <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface-hover: #1c2128;
+      --border: #30363d;
+      --blue: #58a6ff;
+      --blue-dim: rgba(88,166,255,0.08);
+      --blue-glow: rgba(88,166,255,0.12);
+      --purple: #bc8cff;
+      --purple-dim: rgba(188,140,255,0.08);
+      --green: #3fb950;
+      --green-dim: rgba(63,185,80,0.08);
+      --green-border: rgba(63,185,80,0.25);
+      --red: #f85149;
+      --red-dim: rgba(248,81,73,0.08);
+      --yellow: #e3b341;
+      --yellow-dim: rgba(227,179,65,0.08);
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --text-faint: #484f58;
+      --radius: 12px;
+      --ease: cubic-bezier(0.4,0,0.2,1);
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0d1117;
-      color: #e6edf3;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
-      padding: 32px 16px 64px;
+      padding-bottom: 80px;
     }
 
-    h1 { text-align: center; font-size: 1.5rem; font-weight: 600; margin-bottom: 6px; color: #f0f6fc; }
-    .subtitle { text-align: center; color: #8b949e; font-size: 0.875rem; margin-bottom: 32px; }
-
-    .section {
-      max-width: 720px; margin: 0 auto 24px;
-      background: #161b22; border: 1px solid #30363d;
-      border-radius: 12px; padding: 24px;
+    /* ── Nav ── */
+    .nav {
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 52px;
+      position: sticky; top: 0;
+      background: rgba(13,17,23,0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 10;
     }
-    .section-title {
-      font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.6px; color: #8b949e; margin-bottom: 14px;
+    .nav-brand {
+      display: flex; align-items: center; gap: 8px;
+      font-weight: 700; font-size: 0.9rem;
+      color: var(--text); text-decoration: none;
     }
+    .nav-brand-icon {
+      width: 26px; height: 26px; border-radius: 7px;
+      background: linear-gradient(135deg, #6e40c9, #9f5de2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+    .nav-link {
+      font-size: 13px; color: var(--text-muted);
+      text-decoration: none; padding: 6px 12px;
+      border-radius: 8px;
+      transition: color 0.15s var(--ease), background 0.15s var(--ease);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .nav-link:hover { color: var(--text); background: var(--surface); }
 
+    /* ── Page header ── */
+    .page-header {
+      text-align: center;
+      padding: 48px 16px 40px;
+    }
+    .page-header h1 {
+      font-size: 2rem; font-weight: 800; letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #f0f6fc 0%, var(--purple) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+    .page-header p { color: var(--text-muted); font-size: 0.9rem; }
+
+    /* ── Step layout ── */
+    .steps { max-width: 680px; margin: 0 auto; padding: 0 16px; }
+
+    .step {
+      margin-bottom: 20px;
+      opacity: 1;
+      transition: opacity 0.3s var(--ease);
+    }
+    .step.dimmed { opacity: 0.4; pointer-events: none; }
+
+    .step-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 14px;
+    }
+    .step-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--surface); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800; color: var(--text-muted);
+      flex-shrink: 0; font-family: monospace;
+      transition: background 0.2s var(--ease), border-color 0.2s var(--ease), color 0.2s var(--ease);
+    }
+    .step-num.active {
+      background: linear-gradient(135deg, #6e40c9, #9f5de2);
+      border-color: transparent;
+      color: #fff;
+    }
+    .step-num.done {
+      background: var(--green-dim);
+      border-color: var(--green-border);
+      color: var(--green);
+    }
+    .step-title { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+    .step-subtitle { font-size: 0.78rem; color: var(--text-muted); margin-top: 1px; }
+
+    .step-body {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+      transition: border-color 0.2s var(--ease);
+    }
+    .step-body.highlighted { border-color: rgba(188,140,255,0.35); }
+
+    /* ── Inputs ── */
     textarea, input[type="text"], input[type="password"] {
-      width: 100%; background: #21262d; border: 1px solid #30363d;
-      border-radius: 8px; color: #e6edf3; padding: 11px 13px;
-      font-size: 14px; font-family: inherit; resize: vertical;
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      color: var(--text);
+      padding: 11px 13px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
+      resize: vertical;
     }
-    textarea:focus, input[type="text"]:focus, input[type="password"]:focus {
-      outline: none; border-color: #58a6ff;
+    textarea:focus, input:focus {
+      outline: none;
+      border-color: var(--blue);
+      background: rgba(255,255,255,0.06);
     }
-    textarea { min-height: 90px; }
+    textarea { min-height: 88px; line-height: 1.6; }
+    textarea::placeholder, input::placeholder { color: var(--text-faint); }
 
-    label { display: block; font-size: 12px; color: #8b949e; margin-bottom: 5px; margin-top: 14px; }
+    label {
+      display: block;
+      font-size: 12px; font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px; margin-top: 14px;
+      text-transform: uppercase; letter-spacing: 0.4px;
+    }
     label:first-child { margin-top: 0; }
 
-    .row { display: flex; gap: 10px; }
-    .row > * { flex: 1; }
+    .input-row { display: flex; gap: 10px; }
+    .input-row > div { flex: 1; }
 
+    /* ── Buttons ── */
     .btn {
-      border: none; border-radius: 8px; padding: 11px 18px;
-      font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.15s;
+      border: none; border-radius: 9px;
+      padding: 11px 20px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: opacity 0.15s var(--ease), transform 0.1s var(--ease);
+      letter-spacing: 0.2px;
     }
-    .btn:active { opacity: 0.75; }
-    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
-    .btn-primary { background: #58a6ff; color: #0d1117; }
+    .btn:hover { opacity: 0.88; }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+    .btn-full { display: block; width: 100%; margin-top: 14px; }
+    .btn-primary { background: var(--blue); color: #0d1117; }
     .btn-purple  { background: linear-gradient(135deg, #6e40c9, #9f5de2); color: #fff; }
-    .btn-green   { background: #3fb950; color: #0d1117; }
-    .btn-full    { display: block; width: 100%; margin-top: 16px; }
+    .btn-green   { background: var(--green); color: #0d1117; }
 
+    /* ── Spinner ── */
     .spinner {
-      display: inline-block; width: 13px; height: 13px;
+      display: inline-block; width: 12px; height: 12px;
       border: 2px solid currentColor; border-top-color: transparent;
-      border-radius: 50%; animation: spin 0.75s linear infinite;
+      border-radius: 50%; animation: spin 0.7s linear infinite;
       vertical-align: middle; margin-right: 6px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .hidden { display: none !important; }
+    /* ── Status ── */
+    .status-area {
+      padding: 10px 13px; border-radius: 8px;
+      font-size: 12.5px; line-height: 1.65;
+      margin-top: 12px; display: none;
+    }
+    .status-area.show { display: block; }
+    .status-area.info    { background: var(--blue-dim);   border: 1px solid rgba(88,166,255,0.18);  color: var(--blue); }
+    .status-area.success { background: var(--green-dim);  border: 1px solid rgba(63,185,80,0.2);   color: var(--green); }
+    .status-area.error   { background: var(--red-dim);    border: 1px solid rgba(248,81,73,0.2);   color: var(--red); }
+    .status-area.building{ background: var(--purple-dim); border: 1px solid rgba(188,140,255,0.2); color: var(--purple); }
+    .status-link { color: var(--blue); text-decoration: none; font-weight: 600; }
+    .status-link:hover { text-decoration: underline; }
 
-    /* Scaffold preview */
-    .preview-section { max-width: 720px; margin: 0 auto 24px; }
-    .preview-card {
-      background: #161b22; border: 1px solid #3fb950;
-      border-radius: 12px; padding: 24px;
+    /* ── Scaffold preview ── */
+    .preview-body { animation: slideIn 0.3s var(--ease); }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .preview-app-header {
+      display: flex; align-items: flex-start; gap: 14px;
+      margin-bottom: 18px;
+    }
+    .preview-app-icon {
+      width: 52px; height: 52px; border-radius: 13px;
+      background: linear-gradient(135deg, #6e40c9, #9f5de2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; flex-shrink: 0;
+      box-shadow: 0 4px 16px rgba(110,64,201,0.35);
     }
     .preview-app-name {
-      font-size: 1.3rem; font-weight: 700; color: #f0f6fc; margin-bottom: 3px;
+      font-size: 1.25rem; font-weight: 700; color: #f0f6fc;
+      margin-bottom: 3px;
     }
-    .preview-slug { font-size: 0.8rem; color: #8b949e; font-family: monospace; margin-bottom: 10px; }
-    .preview-desc { font-size: 0.9rem; color: #c9d1d9; margin-bottom: 18px; line-height: 1.6; }
+    .preview-slug {
+      font-size: 11px; font-family: monospace;
+      color: var(--blue); background: var(--blue-dim);
+      border: 1px solid rgba(88,166,255,0.15); border-radius: 5px;
+      padding: 2px 7px; display: inline-block; margin-bottom: 5px;
+    }
+    .preview-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
 
-    .preview-label {
-      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.6px; color: #8b949e; margin-bottom: 8px; margin-top: 16px;
+    .preview-section-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--text-faint);
+      margin: 18px 0 8px; padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
     }
-    .screen-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+
+    .screen-list { list-style: none; display: flex; flex-direction: column; gap: 5px; }
     .screen-item {
-      background: #21262d; border-radius: 7px; padding: 9px 12px;
-      font-size: 13px; display: flex; gap: 10px; align-items: baseline;
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      border-radius: 8px; padding: 9px 12px;
+      display: flex; align-items: baseline; gap: 10px;
+      font-size: 13px;
     }
-    .screen-filename { font-family: monospace; color: #79c0ff; flex-shrink: 0; }
-    .screen-desc { color: #8b949e; font-size: 12px; }
+    .screen-filename { font-family: monospace; color: var(--blue); font-size: 12px; flex-shrink: 0; }
+    .screen-desc { color: var(--text-muted); font-size: 12px; }
 
-    .dep-list {
-      display: flex; flex-wrap: wrap; gap: 6px;
-    }
+    .dep-list { display: flex; flex-wrap: wrap; gap: 6px; }
     .dep-chip {
-      background: #21262d; border: 1px solid #30363d;
+      background: var(--purple-dim); border: 1px solid rgba(188,140,255,0.15);
       border-radius: 20px; padding: 3px 10px;
-      font-size: 12px; font-family: monospace; color: #d2a8ff;
+      font-size: 11px; font-family: monospace; color: var(--purple);
     }
 
+    /* ── Code blocks ── */
+    .code-block-wrap { margin-top: 8px; }
     details.code-block {
-      background: #21262d; border: 1px solid #30363d;
-      border-radius: 8px; margin-top: 8px; overflow: hidden;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 9px; overflow: hidden;
     }
+    details.code-block + details.code-block { margin-top: 6px; }
     details.code-block summary {
-      padding: 10px 13px; font-size: 13px; font-weight: 600;
-      color: #8b949e; cursor: pointer; user-select: none;
-      list-style: none; display: flex; align-items: center; gap: 6px;
+      padding: 10px 14px; font-size: 12px; font-weight: 600;
+      color: var(--text-muted); cursor: pointer; user-select: none;
+      list-style: none; display: flex; align-items: center;
+      justify-content: space-between;
+      transition: background 0.15s var(--ease);
     }
-    details.code-block summary::before { content: '▶'; font-size: 10px; transition: transform 0.15s; }
-    details.code-block[open] summary::before { transform: rotate(90deg); }
+    details.code-block summary:hover { background: rgba(255,255,255,0.04); }
+    details.code-block summary::before { content: none; }
+    .summary-left { display: flex; align-items: center; gap: 7px; }
+    .summary-chevron { font-size: 10px; transition: transform 0.15s var(--ease); }
+    details.code-block[open] .summary-chevron { transform: rotate(90deg); }
+    .copy-btn {
+      background: none; border: 1px solid var(--border); border-radius: 5px;
+      color: var(--text-muted); font-size: 11px; padding: 2px 8px;
+      cursor: pointer; transition: all 0.15s var(--ease); font-family: inherit;
+    }
+    .copy-btn:hover { background: var(--surface-hover); color: var(--text); border-color: var(--text-muted); }
+    .copy-btn.copied { color: var(--green); border-color: var(--green-border); }
     details.code-block pre {
-      padding: 14px; font-size: 12px; font-family: monospace;
-      color: #e6edf3; overflow-x: auto; white-space: pre;
-      border-top: 1px solid #30363d; line-height: 1.6; max-height: 300px; overflow-y: auto;
+      padding: 14px; font-size: 11.5px; font-family: 'SF Mono', 'Fira Code', monospace;
+      color: #c9d1d9; overflow-x: auto; white-space: pre;
+      border-top: 1px solid var(--border); line-height: 1.65;
+      max-height: 280px; overflow-y: auto;
     }
 
-    /* Build form */
+    /* ── Token row ── */
     .token-row { display: flex; gap: 8px; }
     .token-row input { flex: 1; }
     .btn-save {
-      background: #58a6ff; color: #0d1117; border: none;
-      border-radius: 8px; padding: 10px 18px; font-size: 14px;
+      background: var(--blue); color: #0d1117; border: none;
+      border-radius: 9px; padding: 10px 18px; font-size: 13px;
       font-weight: 700; cursor: pointer; flex-shrink: 0;
+      transition: opacity 0.15s var(--ease);
     }
-    .token-saved { font-size: 12px; color: #3fb950; margin-top: 6px; display: none; }
-    .token-saved.show { display: block; }
+    .btn-save:hover { opacity: 0.88; }
 
-    /* Status areas */
-    .status-area {
-      padding: 11px 13px; border-radius: 8px;
-      font-size: 13px; line-height: 1.6; margin-top: 12px; display: none;
-    }
-    .status-area.show { display: block; }
-    .status-area.info    { background: rgba(88,166,255,0.08); border: 1px solid rgba(88,166,255,0.25); color: #58a6ff; }
-    .status-area.success { background: rgba(63,185,80,0.08);  border: 1px solid rgba(63,185,80,0.25);  color: #3fb950; }
-    .status-area.error   { background: rgba(248,81,73,0.08);  border: 1px solid rgba(248,81,73,0.25);  color: #f85149; }
-    .status-area.building{ background: rgba(188,140,255,0.08);border: 1px solid rgba(188,140,255,0.25);color: #bc8cff; }
-    .status-link { color: #58a6ff; text-decoration: none; font-weight: 600; }
-
-    /* APPS reminder callout */
+    /* ── Callout ── */
     .callout {
-      background: rgba(255, 196, 0, 0.07); border: 1px solid rgba(255, 196, 0, 0.3);
-      border-radius: 9px; padding: 14px 16px; margin-top: 14px;
-      font-size: 13px; line-height: 1.7; color: #e6ceaa;
+      background: var(--yellow-dim);
+      border: 1px solid rgba(227,179,65,0.2);
+      border-radius: 9px; padding: 13px 15px;
+      margin-top: 14px; font-size: 13px;
+      line-height: 1.7; color: #d4a72c;
     }
+    .callout strong { color: var(--yellow); }
     .callout code {
-      background: #21262d; border-radius: 4px; padding: 1px 6px;
-      font-family: monospace; font-size: 12px; color: #79c0ff;
+      background: rgba(227,179,65,0.1); border-radius: 4px;
+      padding: 1px 6px; font-family: monospace; font-size: 11.5px;
+      color: var(--yellow);
     }
 
-    /* Error explainer */
-    .error-section {
-      max-width: 720px; margin: 0 auto 24px;
-      border: 1px solid #30363d; border-radius: 12px; overflow: hidden;
+    /* ── Error explainer ── */
+    .error-step { max-width: 680px; margin: 0 auto; padding: 0 16px; }
+    .error-disclosure {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
     }
-    .error-summary {
-      width: 100%; background: #161b22; border: none; color: #e6edf3;
-      padding: 15px 20px; display: flex; align-items: center;
-      justify-content: space-between; cursor: pointer; font-size: 14px;
-      font-weight: 600; list-style: none;
+    .error-disclosure-summary {
+      padding: 16px 20px; display: flex; align-items: center;
+      justify-content: space-between; cursor: pointer; user-select: none;
+      list-style: none; transition: background 0.15s var(--ease);
     }
-    .error-summary::-webkit-details-marker { display: none; }
-    .error-section[open] .error-summary { border-bottom: 1px solid #30363d; }
-    .error-body { background: #161b22; padding: 20px; }
+    .error-disclosure-summary:hover { background: var(--surface-hover); }
+    .error-disclosure-summary::-webkit-details-marker { display: none; }
+    .error-disclosure-left {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .error-disclosure-title { font-size: 13px; font-weight: 700; }
+    .error-disclosure-hint { font-size: 12px; color: var(--text-muted); }
+    .error-disclosure-chevron { font-size: 11px; color: var(--text-muted); transition: transform 0.15s var(--ease); }
+    details[open] .error-disclosure-chevron { transform: rotate(180deg); }
+    .error-disclosure-body { padding: 20px; border-top: 1px solid var(--border); }
+
     .error-result {
-      margin-top: 14px; padding: 14px; border-radius: 8px;
-      background: #21262d; border: 1px solid #30363d;
-      font-size: 13px; line-height: 1.7; color: #e6edf3; display: none;
+      margin-top: 14px; border-radius: 9px; overflow: hidden;
+      border: 1px solid var(--border); display: none;
     }
     .error-result.show { display: block; }
-    .error-result h4 { color: #f85149; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
-    .error-result h4.fix { color: #3fb950; margin-top: 12px; }
-    .error-result p { margin-bottom: 4px; }
+    .error-result-section {
+      padding: 13px 15px; font-size: 13px; line-height: 1.7;
+    }
+    .error-result-section + .error-result-section { border-top: 1px solid var(--border); }
+    .error-result-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; margin-bottom: 5px;
+    }
+    .error-result-section.cause { background: var(--red-dim); }
+    .error-result-section.cause .error-result-label { color: var(--red); }
+    .error-result-section.cause p { color: #f0cac8; }
+    .error-result-section.fix { background: var(--green-dim); }
+    .error-result-section.fix .error-result-label { color: var(--green); }
+    .error-result-section.fix p { color: #b0ddb8; }
+    .error-result-section.raw { background: rgba(255,255,255,0.02); }
+    .error-result-section.raw .error-result-label { color: var(--text-muted); }
+    .error-result-section.raw p { color: var(--text-muted); font-size: 12px; }
+
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
-  <h1>🏗️ Expo Builder</h1>
-  <p class="subtitle">AI-powered Expo app scaffolding + EAS build trigger</p>
+  <!-- Nav -->
+  <nav class="nav">
+    <a class="nav-brand" href="expo-builder.html">
+      <div class="nav-brand-icon">🏗️</div>
+      Expo Builder
+    </a>
+    <a class="nav-link" href="app-launcher.html">
+      <span>📱</span> App Launcher
+    </a>
+  </nav>
 
-  <!-- ── 1. Describe your app ── -->
-  <div class="section" id="section-describe">
-    <div class="section-title">✦ Describe your app</div>
-    <textarea
-      id="app-description"
-      placeholder="e.g. A travel planner with a map view, saved trips, and a search screen"
-    ></textarea>
-    <button class="btn btn-primary btn-full" id="btn-generate" onclick="generateScaffold()">
-      Generate Scaffold
-    </button>
-    <div class="status-area" id="status-generate"></div>
+  <!-- Header -->
+  <div class="page-header">
+    <h1>🏗️ Expo Builder</h1>
+    <p>AI-powered scaffold generator · EAS build trigger · Error explainer</p>
   </div>
 
-  <!-- ── 2. Scaffold preview ── -->
-  <div class="preview-section hidden" id="section-preview">
-    <div class="preview-card">
-      <div class="preview-app-name" id="prev-name"></div>
-      <div class="preview-slug" id="prev-slug"></div>
-      <div class="preview-desc" id="prev-desc"></div>
+  <div class="steps">
 
-      <div class="preview-label">Screens</div>
-      <ul class="screen-list" id="prev-screens"></ul>
-
-      <div class="preview-label">npm dependencies</div>
-      <div class="dep-list" id="prev-deps"></div>
-
-      <div class="preview-label">app.json</div>
-      <details class="code-block" id="prev-appjson-wrap">
-        <summary>app.json</summary>
-        <pre id="prev-appjson"></pre>
-      </details>
-
-      <div class="preview-label">devcontainer.json</div>
-      <details class="code-block" id="prev-devcontainer-wrap">
-        <summary>.devcontainer/devcontainer.json</summary>
-        <pre id="prev-devcontainer"></pre>
-      </details>
-
-      <button class="btn btn-green btn-full" onclick="continueTooBuild()">
-        Looks good — continue to build →
-      </button>
-    </div>
-  </div>
-
-  <!-- ── 3. Build form ── -->
-  <div class="section" id="section-build">
-    <div class="section-title">⚡ EAS Build</div>
-
-    <div class="row">
-      <div>
-        <label for="build-app-name">App name</label>
-        <input type="text" id="build-app-name" placeholder="My App" />
+    <!-- ── Step 1: Describe ── -->
+    <div class="step" id="step1">
+      <div class="step-header">
+        <div class="step-num active" id="num1">01</div>
+        <div>
+          <div class="step-title">Describe your app</div>
+          <div class="step-subtitle">Claude will generate screens, deps, app.json, and a devcontainer</div>
+        </div>
       </div>
-      <div>
-        <label for="build-slug">Slug</label>
-        <input type="text" id="build-slug" placeholder="my-app" />
+      <div class="step-body highlighted" id="body1">
+        <textarea
+          id="app-description"
+          placeholder="e.g. A travel planner with a map view, saved trips, and a search screen"
+        ></textarea>
+        <button class="btn btn-purple btn-full" id="btn-generate" onclick="generateScaffold()">
+          ✦ Generate Scaffold
+        </button>
+        <div class="status-area" id="status-generate"></div>
       </div>
     </div>
 
-    <label>App path in repo</label>
-    <input type="text" id="build-path" placeholder="tasks/2026-05-13-my-app/mobile" />
-
-    <label style="margin-top:16px">🔑 GitHub Token <span style="color:#8b949e;font-weight:400">(repo scope)</span></label>
-    <div class="token-row">
-      <input type="password" id="github-token-input" placeholder="ghp_..." />
-      <button class="btn-save" onclick="saveToken()">Save</button>
+    <!-- ── Step 2: Preview ── -->
+    <div class="step hidden" id="step2">
+      <div class="step-header">
+        <div class="step-num" id="num2">02</div>
+        <div>
+          <div class="step-title">Review scaffold</div>
+          <div class="step-subtitle">Screens, dependencies, and generated config files</div>
+        </div>
+      </div>
+      <div class="step-body" id="body2">
+        <div class="preview-body" id="preview-content"></div>
+        <button class="btn btn-green btn-full" onclick="continueTooBuild()">
+          Looks good — continue to build →
+        </button>
+      </div>
     </div>
-    <div class="token-saved" id="token-saved">✓ Token saved for this session</div>
 
-    <button class="btn btn-purple btn-full" id="btn-build" onclick="triggerBuild()">
-      📦 Start EAS Build
-    </button>
-    <div class="status-area" id="status-build"></div>
+    <!-- ── Step 3: Build ── -->
+    <div class="step" id="step3">
+      <div class="step-header">
+        <div class="step-num" id="num3">03</div>
+        <div>
+          <div class="step-title">Trigger EAS build</div>
+          <div class="step-subtitle">Starts a cloud build via GitHub Actions</div>
+        </div>
+      </div>
+      <div class="step-body" id="body3">
+        <div class="input-row">
+          <div>
+            <label>App name</label>
+            <input type="text" id="build-app-name" placeholder="My App" />
+          </div>
+          <div>
+            <label>Slug</label>
+            <input type="text" id="build-slug" placeholder="my-app" />
+          </div>
+        </div>
 
-    <!-- APPS array reminder — shown after build triggered -->
-    <div class="callout hidden" id="apps-reminder">
-      <strong>📋 Remember to add this app to <code>app-launcher.html</code></strong><br>
-      Inside the <code>APPS</code> array, add:<br>
-      <code id="reminder-snippet"></code>
+        <label>App path in repo</label>
+        <input type="text" id="build-path" placeholder="tasks/2026-05-16-my-app/mobile" />
+
+        <label style="margin-top:18px">🔑 GitHub Token <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-faint)">(repo scope)</span></label>
+        <div class="token-row">
+          <input type="password" id="github-token-input" placeholder="ghp_…" autocomplete="off" />
+          <button class="btn-save" onclick="saveToken()">Save</button>
+        </div>
+
+        <button class="btn btn-purple btn-full" id="btn-build" onclick="triggerBuild()">
+          📦 Start EAS Build
+        </button>
+        <div class="status-area" id="status-build"></div>
+        <div class="callout hidden" id="apps-reminder">
+          <strong>📋 Add this app to app-launcher.html</strong><br>
+          Inside the <code>APPS</code> array, paste:<br>
+          <code id="reminder-snippet" style="word-break:break-all"></code>
+        </div>
+      </div>
     </div>
+
+  </div><!-- /steps -->
+
+  <!-- ── Step 4: Error explainer ── -->
+  <div class="error-step" style="margin-top:20px">
+    <div class="step-header" style="padding:0 0 14px">
+      <div class="step-num" id="num4">04</div>
+      <div>
+        <div class="step-title">Paste build error</div>
+        <div class="step-subtitle">Claude will identify the root cause and tell you how to fix it</div>
+      </div>
+    </div>
+    <details class="error-disclosure">
+      <summary class="error-disclosure-summary">
+        <div class="error-disclosure-left">
+          <span>🔍</span>
+          <span class="error-disclosure-title">EAS Error Analyzer</span>
+          <span class="error-disclosure-hint">paste log → instant fix</span>
+        </div>
+        <span class="error-disclosure-chevron">▼</span>
+      </summary>
+      <div class="error-disclosure-body">
+        <label>Build log or error output</label>
+        <textarea id="error-log" style="min-height:110px;margin-top:6px" placeholder="Copy the relevant section from your EAS build log or error…"></textarea>
+        <button class="btn btn-primary" style="margin-top:10px" id="btn-explain" onclick="explainError()">
+          Analyze Error
+        </button>
+        <div class="error-result" id="error-result"></div>
+      </div>
+    </details>
   </div>
-
-  <!-- ── 4. Error explainer ── -->
-  <details class="error-section">
-    <summary class="error-summary">
-      <span>🔍 Paste build error</span>
-      <span style="color:#8b949e;font-weight:400;font-size:13px">EAS log → root cause + fix</span>
-    </summary>
-    <div class="error-body">
-      <label for="error-log">Paste your EAS build log or error output:</label>
-      <textarea id="error-log" style="min-height:120px;margin-top:6px" placeholder="Copy the relevant section from your EAS build log…"></textarea>
-      <button class="btn btn-primary" style="margin-top:10px" id="btn-explain" onclick="explainError()">
-        Analyze Error
-      </button>
-      <div class="error-result" id="error-result"></div>
-    </div>
-  </details>
 
   <script>
     const REPO = 'kani4jk-bot/coding-tasks';
@@ -295,7 +514,6 @@
       el.className = `status-area show ${type}`;
       el.innerHTML = html;
     }
-
     function clearStatus(id) {
       const el = document.getElementById(id);
       el.className = 'status-area';
@@ -303,7 +521,7 @@
     }
 
     async function callClaude(systemPrompt, userContent) {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -313,12 +531,34 @@
           messages: [{ role: 'user', content: userContent }],
         }),
       });
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.error?.message || `API error ${response.status}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error?.message || `API error ${res.status}`);
       }
-      const data = await response.json();
+      const data = await res.json();
       return data.content?.find(b => b.type === 'text')?.text || '';
+    }
+
+    function copyCode(btn, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied ✓';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
+
+    // ── Step indicators ───────────────────────────────────────────────────────
+
+    function setStepDone(n) {
+      const el = document.getElementById(`num${n}`);
+      el.classList.remove('active');
+      el.classList.add('done');
+      el.textContent = '✓';
+    }
+    function setStepActive(n) {
+      const el = document.getElementById(`num${n}`);
+      el.classList.add('active');
+      el.classList.remove('done');
     }
 
     // ── 1. Generate Scaffold ──────────────────────────────────────────────────
@@ -328,13 +568,14 @@
   "appName": string,
   "slug": string,
   "description": string,
+  "emoji": string,
   "screens": [{ "name": string, "filename": string, "description": string }],
   "dependencies": [string],
   "appJson": { ...full app.json contents... },
   "devcontainer": { ...full .devcontainer/devcontainer.json contents... }
 }
 The devcontainer must always include: node 20, the Expo CLI, and EAS CLI pre-installed.
-The appJson must include ios.infoPlist.ITSAppUsesNonExemptEncryption: false and a placeholder bundleIdentifier.`;
+The appJson must include ios.infoPlist.ITSAppUsesNonExemptEncryption: false and a placeholder bundleIdentifier com.kani.SLUG.`;
 
     async function generateScaffold() {
       const desc = document.getElementById('app-description').value.trim();
@@ -342,43 +583,89 @@ The appJson must include ios.infoPlist.ITSAppUsesNonExemptEncryption: false and 
 
       const btn = document.getElementById('btn-generate');
       btn.disabled = true;
-      setStatus('status-generate', 'info', '<span class="spinner"></span> Generating scaffold with Claude…');
-      document.getElementById('section-preview').classList.add('hidden');
+      btn.innerHTML = '<span class="spinner"></span> Generating with Claude…';
+      setStatus('status-generate', 'building', '<span class="spinner"></span> Claude is designing your app architecture…');
+      document.getElementById('step2').classList.add('hidden');
 
       try {
         const text = await callClaude(SCAFFOLD_SYSTEM, desc);
         scaffoldData = JSON.parse(text);
         renderPreview(scaffoldData);
         clearStatus('status-generate');
-        document.getElementById('section-preview').classList.remove('hidden');
-        document.getElementById('section-preview').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setStepDone(1);
+        setStepActive(2);
+
+        const step2 = document.getElementById('step2');
+        step2.classList.remove('hidden');
+        setTimeout(() => step2.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
       } catch (err) {
         setStatus('status-generate', 'error', `❌ ${err.message}`);
       } finally {
         btn.disabled = false;
+        btn.innerHTML = '✦ Generate Scaffold';
       }
     }
 
     function renderPreview(d) {
-      document.getElementById('prev-name').textContent = d.appName;
-      document.getElementById('prev-slug').textContent = d.slug;
-      document.getElementById('prev-desc').textContent = d.description;
+      const emojiDisplay = d.emoji || '📱';
+      const appJsonStr = JSON.stringify(d.appJson, null, 2);
+      const devcontainerStr = JSON.stringify(d.devcontainer, null, 2);
 
-      const screenList = document.getElementById('prev-screens');
-      screenList.innerHTML = (d.screens || []).map(s => `
+      const screensHtml = (d.screens || []).map(s => `
         <li class="screen-item">
           <span class="screen-filename">${s.filename}</span>
           <span class="screen-desc">${s.description}</span>
         </li>
       `).join('');
 
-      const depList = document.getElementById('prev-deps');
-      depList.innerHTML = (d.dependencies || []).map(dep =>
+      const depsHtml = (d.dependencies || []).map(dep =>
         `<span class="dep-chip">${dep}</span>`
       ).join('');
 
-      document.getElementById('prev-appjson').textContent = JSON.stringify(d.appJson, null, 2);
-      document.getElementById('prev-devcontainer').textContent = JSON.stringify(d.devcontainer, null, 2);
+      document.getElementById('preview-content').innerHTML = `
+        <div class="preview-app-header">
+          <div class="preview-app-icon">${emojiDisplay}</div>
+          <div>
+            <div class="preview-app-name">${d.appName}</div>
+            <div class="preview-slug">${d.slug}</div>
+            <div class="preview-desc">${d.description}</div>
+          </div>
+        </div>
+
+        <div class="preview-section-label">Screens</div>
+        <ul class="screen-list">${screensHtml}</ul>
+
+        <div class="preview-section-label">npm dependencies</div>
+        <div class="dep-list">${depsHtml}</div>
+
+        <div class="preview-section-label">Config files</div>
+        <div class="code-block-wrap">
+          <details class="code-block" id="cb-appjson">
+            <summary>
+              <span class="summary-left">
+                <span class="summary-chevron">▶</span>
+                <span style="font-family:monospace">app.json</span>
+              </span>
+              <button class="copy-btn" id="copy-appjson" onclick="event.stopPropagation(); copyCode(document.getElementById('copy-appjson'), ${JSON.stringify(appJsonStr)})">Copy</button>
+            </summary>
+            <pre>${escapeHtml(appJsonStr)}</pre>
+          </details>
+          <details class="code-block" id="cb-devcontainer">
+            <summary>
+              <span class="summary-left">
+                <span class="summary-chevron">▶</span>
+                <span style="font-family:monospace">.devcontainer/devcontainer.json</span>
+              </span>
+              <button class="copy-btn" id="copy-dc" onclick="event.stopPropagation(); copyCode(document.getElementById('copy-dc'), ${JSON.stringify(devcontainerStr)})">Copy</button>
+            </summary>
+            <pre>${escapeHtml(devcontainerStr)}</pre>
+          </details>
+        </div>
+      `;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
     // ── 2. Continue to build ──────────────────────────────────────────────────
@@ -387,15 +674,18 @@ The appJson must include ios.infoPlist.ITSAppUsesNonExemptEncryption: false and 
       if (!scaffoldData) return;
       document.getElementById('build-app-name').value = scaffoldData.appName || '';
       document.getElementById('build-slug').value = scaffoldData.slug || '';
-
       const today = new Date().toISOString().slice(0, 10);
       document.getElementById('build-path').value =
         `tasks/${today}-${scaffoldData.slug || 'my-app'}/mobile`;
 
-      document.getElementById('section-build').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setStepDone(2);
+      setStepActive(3);
+      setTimeout(() => {
+        document.getElementById('step3').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
     }
 
-    // ── 3. Build trigger ──────────────────────────────────────────────────────
+    // ── 3. Build ──────────────────────────────────────────────────────────────
 
     function saveToken() {
       const val = document.getElementById('github-token-input').value.trim();
@@ -403,7 +693,6 @@ The appJson must include ios.infoPlist.ITSAppUsesNonExemptEncryption: false and 
       githubToken = val;
       document.getElementById('github-token-input').value = '';
       document.getElementById('github-token-input').placeholder = '••••••••••••••';
-      document.getElementById('token-saved').classList.add('show');
     }
 
     async function triggerBuild() {
@@ -436,15 +725,14 @@ The appJson must include ios.infoPlist.ITSAppUsesNonExemptEncryption: false and 
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          throw new Error(err.message || `GitHub API error ${res.status}`);
+          throw new Error(err.message || `GitHub API ${res.status}`);
         }
-
         setStatus('status-build', 'building',
           `<span class="spinner"></span> Workflow triggered — finding run…<br>
-           <small style="color:#8b949e">Checking every 15 s</small>`
+           <small style="color:var(--text-muted)">Polling every 15 s</small>`
         );
-
         showAppsReminder(appName, slug, path);
+        setStepDone(3);
         pollForRun(slug, path, triggerTime, 0);
       } catch (err) {
         setStatus('status-build', 'error', `❌ ${err.message}`);
@@ -453,8 +741,8 @@ The appJson must include ios.infoPlist.ITSAppUsesNonExemptEncryption: false and 
     }
 
     function showAppsReminder(appName, slug, path) {
-      const emoji = '📱';
-      const snippet = `{ name: '${appName}', emoji: '${emoji}', path: '${path}', slug: '${slug}' }`;
+      const emoji = scaffoldData?.emoji || '📱';
+      const snippet = `{ name: '${appName}', emoji: '${emoji}', path: '${path}', slug: '${slug}', easProjectId: 'YOUR_PROJECT_ID' }`;
       document.getElementById('reminder-snippet').textContent = snippet;
       document.getElementById('apps-reminder').classList.remove('hidden');
     }
@@ -479,7 +767,7 @@ The appJson must include ios.infoPlist.ITSAppUsesNonExemptEncryption: false and 
         if (run) {
           setStatus('status-build', 'building',
             `<span class="spinner"></span> Building… (Run #${run.run_number})<br>
-             <small style="color:#8b949e;display:block;margin-top:4px">~10 min — EAS Build running in CI</small>
+             <small style="color:var(--text-muted);display:block;margin-top:4px">~10 min · EAS cloud build</small>
              <a class="status-link" href="${run.html_url}" target="_blank">Watch on GitHub Actions →</a>`
           );
           pollRunStatus(slug, path, run.id, run.html_url, 0);
@@ -502,12 +790,12 @@ The appJson must include ios.infoPlist.ITSAppUsesNonExemptEncryption: false and 
             setStatus('status-build', 'success',
               `✅ Build complete!<br>
                <a class="status-link" href="https://expo.dev/accounts/camputy/projects" target="_blank">📥 Get install link on expo.dev →</a><br>
-               <a class="status-link" href="${runUrl}" target="_blank" style="font-size:12px;opacity:0.7">View run →</a>`
+               <a class="status-link" href="${runUrl}" target="_blank" style="font-size:11px;opacity:0.6">View run →</a>`
             );
           } else {
             setStatus('status-build', 'error',
               `❌ Build ${run.conclusion}.<br>
-               <a class="status-link" href="${runUrl}" target="_blank">See details on GitHub →</a>`
+               <a class="status-link" href="${runUrl}" target="_blank">View details on GitHub →</a>`
             );
           }
         } else {
@@ -532,48 +820,65 @@ Be concise and direct.`;
       const btn = document.getElementById('btn-explain');
       const result = document.getElementById('error-result');
       btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Analyzing…';
       result.classList.remove('show');
-      result.innerHTML = '<span class="spinner"></span> Analyzing…';
-      result.classList.add('show');
 
       try {
         const text = await callClaude(ERROR_SYSTEM, log);
-        const lines = text.split('\n').filter(l => l.trim());
 
+        // Parse root cause and fix sections
         let rootCause = '';
-        let fixLines = [];
-        let inFix = false;
+        const fixSteps = [];
+        let mode = null;
 
-        for (const line of lines) {
-          const stripped = line.replace(/^\d+\.\s*/, '').replace(/^\*+\s*/, '').trim();
-          if (/root cause/i.test(line)) {
-            rootCause = stripped.replace(/root cause[:\s]*/i, '').trim();
-            inFix = false;
-          } else if (/^fix|^step|^2\./i.test(line)) {
-            inFix = true;
-            const fixText = stripped.replace(/^fix[:\s]*/i, '').trim();
-            if (fixText) fixLines.push(fixText);
-          } else if (inFix && stripped) {
-            fixLines.push(stripped);
-          } else if (!inFix && !rootCause && stripped) {
-            rootCause = stripped;
+        for (const line of text.split('\n')) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          if (/^1\.|root cause/i.test(trimmed)) {
+            mode = 'cause';
+            rootCause = trimmed.replace(/^1\.\s*|root cause[:\s]*/i, '').trim();
+          } else if (/^2\.|^fix[:\s]/i.test(trimmed)) {
+            mode = 'fix';
+            const first = trimmed.replace(/^2\.\s*|^fix[:\s]*/i, '').trim();
+            if (first) fixSteps.push(first);
+          } else if (mode === 'cause' && !rootCause) {
+            rootCause = trimmed;
+          } else if (mode === 'fix' && trimmed) {
+            fixSteps.push(trimmed);
           }
         }
 
-        if (!rootCause && !fixLines.length) {
-          result.innerHTML = `<p>${text}</p>`;
+        const fixHtml = fixSteps.map(s => `<p>${s}</p>`).join('');
+
+        if (!rootCause && !fixSteps.length) {
+          result.innerHTML = `
+            <div class="error-result-section raw">
+              <div class="error-result-label">Analysis</div>
+              <p>${escapeHtml(text)}</p>
+            </div>`;
         } else {
           result.innerHTML = `
-            <h4>Root Cause</h4>
-            <p>${rootCause || '—'}</p>
-            <h4 class="fix">Fix</h4>
-            ${fixLines.map((l, i) => `<p>${i + 1 <= 1 && /^\d/.test(l) ? '' : ''}${l}</p>`).join('')}
-          `;
+            <div class="error-result-section cause">
+              <div class="error-result-label">Root Cause</div>
+              <p>${escapeHtml(rootCause || '—')}</p>
+            </div>
+            <div class="error-result-section fix">
+              <div class="error-result-label">Fix</div>
+              ${fixHtml || '<p>—</p>'}
+            </div>`;
         }
+        result.classList.add('show');
+        setStepActive(4);
       } catch (err) {
-        result.innerHTML = `<p style="color:#f85149">❌ ${err.message}</p>`;
+        result.innerHTML = `
+          <div class="error-result-section cause">
+            <div class="error-result-label">Error</div>
+            <p>${escapeHtml(err.message)}</p>
+          </div>`;
+        result.classList.add('show');
       } finally {
         btn.disabled = false;
+        btn.innerHTML = 'Analyze Error';
       }
     }
   </script>

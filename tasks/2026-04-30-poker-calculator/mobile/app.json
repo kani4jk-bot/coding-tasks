@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Poker Calculator",
-    "slug": "poker-calculator",
+    "slug": "camerons-apps",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -11,11 +11,14 @@
       "resizeMode": "contain",
       "backgroundColor": "#050e08"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.kani4jkbot.pokercalculator",
+      "bundleIdentifier": "com.kani.pokercalculator",
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "Used to scan and identify playing cards on the board.",
         "NSPhotoLibraryUsageDescription": "Used to select photos of playing cards."
       }
@@ -25,8 +28,12 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#050e08"
       },
-      "package": "com.kani4jkbot.pokercalculator",
-      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE"]
+      "package": "com.kani.pokercalculator",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
       [
@@ -37,6 +44,14 @@
         }
       ]
     ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "owner": "camputy",
+    "updates": {
+      "url": "https://u.expo.dev/64a919d8-9535-4c0c-b10e-1656bba05377",
+      "checkAutomatically": "ON_LOAD"
+    },
     "extra": {
       "eas": {
         "projectId": "64a919d8-9535-4c0c-b10e-1656bba05377"

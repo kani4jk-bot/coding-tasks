@@ -112,6 +112,7 @@ Each mobile app has its **own unique EAS projectId** — do not reuse IDs across
 | `tasks/2026-04-09-vehicle-identification-app/mobile` | `e8f6ee23-9808-44df-b739-2b20fd30e5bb` |
 | `tasks/2026-04-13-travel-planner-app/mobile` | `f5c10a41-366d-489b-890e-c32cc9bf2803` |
 | `tasks/2026-04-18-charades-mobile-game` | `64a919d8-9535-4c0c-b10e-1656bba05377` |
+| `tasks/2026-04-30-poker-calculator/mobile` | `64a919d8-9535-4c0c-b10e-1656bba05377` |
 
 Each app's `app.json` must also include `expo-updates` in `package.json` for OTA updates to work at runtime. Use `checkAutomatically: "ON_LOAD"` in the `updates` block (not the deprecated `fallbackToCacheTimeout`).
 

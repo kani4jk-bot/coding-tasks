@@ -5,150 +5,349 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>App Launcher</title>
   <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface-hover: #1c2128;
+      --border: #30363d;
+      --blue: #58a6ff;
+      --blue-dim: rgba(88,166,255,0.1);
+      --blue-glow: rgba(88,166,255,0.15);
+      --purple: #bc8cff;
+      --purple-dim: rgba(188,140,255,0.08);
+      --green: #3fb950;
+      --green-dim: rgba(63,185,80,0.08);
+      --red: #f85149;
+      --red-dim: rgba(248,81,73,0.08);
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --radius: 12px;
+      --ease: cubic-bezier(0.4,0,0.2,1);
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0d1117;
-      color: #e6edf3;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
-      padding: 32px 16px;
+      padding-bottom: 64px;
     }
-    h1 { text-align: center; font-size: 1.5rem; font-weight: 600; margin-bottom: 8px; color: #f0f6fc; }
-    .subtitle { text-align: center; color: #8b949e; font-size: 0.875rem; margin-bottom: 24px; }
 
+    /* ── Nav ── */
+    .nav {
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 52px;
+      position: sticky;
+      top: 0;
+      background: rgba(13,17,23,0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 10;
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .nav-brand-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse-dot 2.5s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.85); }
+    }
+    .nav-link {
+      font-size: 13px; color: var(--text-muted);
+      text-decoration: none; padding: 6px 12px;
+      border-radius: 8px; transition: color 0.15s var(--ease), background 0.15s var(--ease);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .nav-link:hover { color: var(--text); background: var(--surface); }
+
+    /* ── Page header ── */
+    .page-header {
+      text-align: center;
+      padding: 48px 16px 32px;
+    }
+    .page-header h1 {
+      font-size: 2rem; font-weight: 800; letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #f0f6fc 0%, #8b949e 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+    .page-header p {
+      color: var(--text-muted); font-size: 0.9rem;
+      transition: opacity 0.2s var(--ease);
+    }
+
+    /* ── Tabs ── */
+    .tabs-wrap {
+      max-width: 420px;
+      margin: 0 auto 28px;
+      padding: 0 16px;
+    }
     .tabs {
-      display: flex; max-width: 480px; margin: 0 auto 28px;
-      background: #161b22; border: 1px solid #30363d;
-      border-radius: 12px; padding: 4px; gap: 4px;
+      display: flex;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 4px;
+      gap: 3px;
     }
     .tab {
-      flex: 1; background: none; border: none; border-radius: 9px;
-      color: #8b949e; padding: 10px 8px; font-size: 13px;
-      font-weight: 600; cursor: pointer; text-align: center; line-height: 1.4; transition: all 0.15s;
+      flex: 1; background: none; border: none;
+      border-radius: 8px; color: var(--text-muted);
+      padding: 9px 8px; font-size: 13px; font-weight: 600;
+      cursor: pointer; text-align: center; line-height: 1.4;
+      transition: all 0.18s var(--ease);
     }
-    .tab small { display: block; font-weight: 400; font-size: 11px; opacity: 0.75; }
-    .tab.active { background: #21262d; color: #e6edf3; border: 1px solid #30363d; }
+    .tab small { display: block; font-weight: 400; font-size: 11px; opacity: 0.7; margin-top: 1px; }
+    .tab.active {
+      background: var(--surface-hover);
+      color: var(--text);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+    .tab:not(.active):hover { color: var(--text); background: rgba(255,255,255,0.04); }
 
+    /* ── Token bar ── */
     .token-bar {
       max-width: 900px; margin: 0 auto 20px;
-      background: #161b22; border: 1px solid #30363d;
-      border-radius: 12px; overflow: hidden; display: none;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden; display: none;
     }
     .token-bar.show { display: block; }
     .token-toggle {
-      width: 100%; background: none; border: none; color: #e6edf3;
-      padding: 13px 16px; display: flex; align-items: center;
-      justify-content: space-between; cursor: pointer; font-size: 14px; font-weight: 600;
+      width: 100%; background: none; border: none; color: var(--text);
+      padding: 14px 18px; display: flex; align-items: center;
+      justify-content: space-between; cursor: pointer; font-size: 13px; font-weight: 600;
+      transition: background 0.15s var(--ease);
     }
-    .token-body { padding: 0 16px 14px; display: none; }
+    .token-toggle:hover { background: var(--surface-hover); }
+    .token-toggle-left { display: flex; align-items: center; gap: 8px; }
+    .token-badge {
+      font-size: 11px; background: var(--blue-dim); color: var(--blue);
+      border: 1px solid rgba(88,166,255,0.2); border-radius: 20px;
+      padding: 2px 8px; font-weight: 500;
+    }
+    .token-badge.saved { background: var(--green-dim); color: var(--green); border-color: rgba(63,185,80,0.2); }
+    .token-body { padding: 0 18px 16px; display: none; border-top: 1px solid var(--border); }
     .token-body.open { display: block; }
-    .token-label { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .token-hint { font-size: 12px; color: var(--text-muted); padding: 12px 0 10px; line-height: 1.6; }
     .token-row { display: flex; gap: 8px; }
     .token-row input {
-      flex: 1; background: #21262d; border: 1px solid #30363d;
-      border-radius: 8px; color: #e6edf3; padding: 10px 12px;
-      font-size: 14px; font-family: monospace; min-width: 0;
+      flex: 1; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); padding: 10px 12px;
+      font-size: 13px; font-family: monospace; min-width: 0;
+      transition: border-color 0.15s var(--ease);
     }
-    .token-row input:focus { outline: none; border-color: #58a6ff; }
+    .token-row input:focus { outline: none; border-color: var(--blue); }
     .btn-save {
-      background: #58a6ff; color: #0d1117; border: none;
-      border-radius: 8px; padding: 10px 18px; font-size: 14px;
-      font-weight: 700; cursor: pointer; flex-shrink: 0;
+      background: var(--blue); color: #0d1117; border: none;
+      border-radius: 8px; padding: 10px 18px; font-size: 13px;
+      font-weight: 700; cursor: pointer; transition: opacity 0.15s var(--ease), transform 0.1s var(--ease);
+      flex-shrink: 0;
     }
-    .token-saved { font-size: 12px; color: #3fb950; margin-top: 6px; display: none; }
-    .token-saved.show { display: block; }
+    .btn-save:hover { opacity: 0.88; }
+    .btn-save:active { transform: scale(0.97); }
 
+    /* ── Grid ── */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 16px; max-width: 900px; margin: 0 auto;
+      gap: 14px;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 16px;
     }
+
+    /* ── P1 card ── */
     .card {
-      background: #161b22; border: 1px solid #30363d; border-radius: 12px;
-      padding: 20px; display: flex; align-items: center; gap: 16px;
-      text-decoration: none; color: inherit; transition: border-color 0.15s, background 0.15s;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      display: flex; align-items: center; gap: 14px;
+      text-decoration: none; color: inherit;
+      transition: border-color 0.18s var(--ease), background 0.18s var(--ease), transform 0.18s var(--ease), box-shadow 0.18s var(--ease);
+      position: relative; overflow: hidden;
     }
-    .card:hover { border-color: #58a6ff; background: #1c2128; }
+    .card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, var(--blue-glow) 0%, transparent 60%);
+      opacity: 0; transition: opacity 0.25s var(--ease);
+      pointer-events: none;
+    }
+    .card:hover {
+      border-color: var(--blue);
+      background: var(--surface-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3), 0 0 0 1px rgba(88,166,255,0.1);
+    }
+    .card:hover::before { opacity: 1; }
+    .card:active { transform: translateY(0); }
 
+    .card-emoji {
+      font-size: 1.9rem; flex-shrink: 0;
+      width: 44px; text-align: center;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+    }
+    .card-info { flex: 1; min-width: 0; }
+    .card-name { font-weight: 600; font-size: 0.95rem; margin-bottom: 3px; color: #f0f6fc; }
+    .card-path {
+      font-size: 0.72rem; color: var(--text-muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      font-family: monospace;
+    }
+    .card-arrow {
+      color: var(--blue); font-size: 1rem; flex-shrink: 0;
+      opacity: 0.5; transition: opacity 0.18s var(--ease), transform 0.18s var(--ease);
+    }
+    .card:hover .card-arrow { opacity: 1; transform: translateX(3px); }
+
+    /* ── P2 card ── */
     .card-p2 {
-      background: #161b22; border: 1px solid #30363d;
-      border-radius: 12px; overflow: hidden; transition: border-color 0.15s;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      transition: border-color 0.18s var(--ease), box-shadow 0.18s var(--ease);
     }
-    .card-p2:hover { border-color: #bc8cff; }
-    .card-p2-top { padding: 20px; display: flex; align-items: center; gap: 16px; }
+    .card-p2:hover {
+      border-color: rgba(188,140,255,0.4);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    }
+    .card-p2-top {
+      padding: 18px 20px; display: flex; align-items: center; gap: 14px;
+    }
     .build-btn {
-      display: block; width: calc(100% - 32px); margin: 0 16px 16px;
-      background: linear-gradient(135deg, #6e40c9, #9f5de2);
+      display: block; width: calc(100% - 28px); margin: 0 14px 14px;
+      background: linear-gradient(135deg, #6e40c9 0%, #9f5de2 100%);
       color: white; border: none; border-radius: 9px;
-      padding: 12px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.15s;
+      padding: 12px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: opacity 0.15s var(--ease), transform 0.1s var(--ease);
+      letter-spacing: 0.2px;
     }
-    .build-btn:active { opacity: 0.75; }
-    .build-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .build-btn:hover { opacity: 0.9; }
+    .build-btn:active { transform: scale(0.98); opacity: 0.8; }
+    .build-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
 
+    /* ── Status ── */
     .status-area {
-      margin: 0 16px 14px; padding: 11px 13px;
-      border-radius: 9px; font-size: 13px; line-height: 1.6; display: none;
+      margin: 0 14px 12px;
+      padding: 10px 13px;
+      border-radius: 9px;
+      font-size: 12.5px; line-height: 1.65;
+      display: none;
     }
     .status-area.show { display: block; }
-    .status-area.info    { background: rgba(88,166,255,0.08); border: 1px solid rgba(88,166,255,0.25); color: #58a6ff; }
-    .status-area.success { background: rgba(63,185,80,0.08);  border: 1px solid rgba(63,185,80,0.25);  color: #3fb950; }
-    .status-area.error   { background: rgba(248,81,73,0.08);  border: 1px solid rgba(248,81,73,0.25);  color: #f85149; }
-    .status-area.building{ background: rgba(188,140,255,0.08);border: 1px solid rgba(188,140,255,0.25);color: #bc8cff; }
-    .status-link { color: #58a6ff; text-decoration: none; font-weight: 600; }
+    .status-area.info    { background: var(--blue-dim);   border: 1px solid rgba(88,166,255,0.2);  color: var(--blue); }
+    .status-area.success { background: var(--green-dim);  border: 1px solid rgba(63,185,80,0.2);   color: var(--green); }
+    .status-area.error   { background: var(--red-dim);    border: 1px solid rgba(248,81,73,0.2);   color: var(--red); }
+    .status-area.building{ background: var(--purple-dim); border: 1px solid rgba(188,140,255,0.2); color: var(--purple); }
+    .status-link { color: var(--blue); text-decoration: none; font-weight: 600; }
+    .status-link:hover { text-decoration: underline; }
 
-    .progress-bar { height: 4px; background: #30363d; border-radius: 2px; margin-top: 8px; overflow: hidden; }
-    .progress-fill {
-      height: 100%; background: #bc8cff; border-radius: 2px;
-      width: 5%; transition: width 1s ease; animation: ppulse 2s ease-in-out infinite;
+    /* ── Progress ── */
+    .progress-bar {
+      height: 3px; background: rgba(188,140,255,0.15);
+      border-radius: 2px; margin-top: 9px; overflow: hidden;
     }
-    @keyframes ppulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #6e40c9, #bc8cff, #6e40c9);
+      background-size: 200% 100%;
+      border-radius: 2px;
+      width: 5%;
+      transition: width 1.2s var(--ease);
+      animation: shimmer 1.8s linear infinite;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
+    /* ── Spinner ── */
     .spinner {
-      display: inline-block; width: 13px; height: 13px;
+      display: inline-block; width: 12px; height: 12px;
       border: 2px solid currentColor; border-top-color: transparent;
-      border-radius: 50%; animation: spin 0.75s linear infinite;
+      border-radius: 50%; animation: spin 0.7s linear infinite;
       vertical-align: middle; margin-right: 6px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .emoji { font-size: 2rem; flex-shrink: 0; width: 48px; text-align: center; }
-    .info { flex: 1; min-width: 0; }
-    .name { font-weight: 600; font-size: 1rem; margin-bottom: 4px; color: #f0f6fc; }
-    .path { font-size: 0.75rem; color: #8b949e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .arrow { color: #58a6ff; font-size: 1.25rem; flex-shrink: 0; }
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center; padding: 60px 20px;
+      color: var(--text-muted); font-size: 0.875rem;
+      max-width: 900px; margin: 0 auto;
+    }
+    .empty-state-icon { font-size: 2.5rem; margin-bottom: 12px; }
   </style>
 </head>
 <body>
 
-  <h1>📱 App Launcher</h1>
-  <p class="subtitle" id="subtitle">Open any app in GitHub Codespaces — scan the QR code in Expo Go</p>
+  <!-- Nav -->
+  <nav class="nav">
+    <a class="nav-brand" href="#">
+      <div class="nav-brand-dot"></div>
+      App Launcher
+    </a>
+    <a class="nav-link" href="expo-builder.html">
+      <span>🏗️</span> Expo Builder
+    </a>
+  </nav>
 
-  <div class="tabs">
-    <button class="tab active" id="tab1" onclick="setPipeline(1)">
-      🚀 Pipeline 1
-      <small>Expo Go · Codespaces</small>
-    </button>
-    <button class="tab" id="tab2" onclick="setPipeline(2)">
-      📦 Pipeline 2
-      <small>EAS Build · Install</small>
-    </button>
+  <!-- Header -->
+  <div class="page-header">
+    <h1 id="page-title">📱 App Launcher</h1>
+    <p id="subtitle">Open any app in GitHub Codespaces — scan the QR code in Expo Go</p>
   </div>
 
-  <div class="token-bar" id="token-bar">
-    <button class="token-toggle" onclick="toggleToken()">
-      <span>🔑 GitHub Token</span>
-      <span id="token-arrow">▼</span>
-    </button>
-    <div class="token-body" id="token-body">
-      <div class="token-label">GitHub Personal Access Token with <code>repo</code> scope — required to trigger EAS builds via GitHub Actions</div>
-      <div class="token-row">
-        <input type="password" id="expo-token-input" placeholder="ghp_..." />
-        <button class="btn-save" onclick="saveGithubToken()">Save</button>
-      </div>
-      <div class="token-saved" id="token-saved">✓ Token saved for this session</div>
+  <!-- Pipeline tabs -->
+  <div class="tabs-wrap">
+    <div class="tabs">
+      <button class="tab active" id="tab1" onclick="setPipeline(1)">
+        🚀 Pipeline 1
+        <small>Expo Go · Codespaces</small>
+      </button>
+      <button class="tab" id="tab2" onclick="setPipeline(2)">
+        📦 Pipeline 2
+        <small>EAS Build · Install</small>
+      </button>
     </div>
   </div>
 
+  <!-- GitHub token (P2 only) -->
+  <div class="token-bar" id="token-bar">
+    <button class="token-toggle" onclick="toggleToken()">
+      <div class="token-toggle-left">
+        <span>🔑 GitHub Token</span>
+        <span class="token-badge" id="token-badge">required</span>
+      </div>
+      <span id="token-arrow" style="color:var(--text-muted);font-size:12px">▼</span>
+    </button>
+    <div class="token-body" id="token-body">
+      <p class="token-hint">Personal Access Token with <strong>repo</strong> scope — used to trigger EAS builds via GitHub Actions.</p>
+      <div class="token-row">
+        <input type="password" id="expo-token-input" placeholder="ghp_…" autocomplete="off" />
+        <button class="btn-save" onclick="saveGithubToken()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- App grid -->
   <div class="grid" id="grid"></div>
 
   <script>
@@ -162,13 +361,13 @@
 
     // AUTO-GENERATED-APPS-START
     const APPS = [
-      { name: 'Home Visualizer', emoji: '🏠', path: 'tasks/2026-03-27-architecture-project/mobile', slug: 'home-visualizer' },
-      { name: 'Birdsong ID', emoji: '🐦', path: 'tasks/2026-04-01-bird-song-id-mvp/mobile', slug: 'birdsong-id' },
-      { name: 'Plant ID', emoji: '🌿', path: 'tasks/2026-04-09-plant-identification-app/mobile', slug: 'plant-id' },
-      { name: 'VehicleID', emoji: '🚗', path: 'tasks/2026-04-09-vehicle-identification-app/mobile', slug: 'vehicle-id' },
-      { name: 'Travel Planner', emoji: '✈️', path: 'tasks/2026-04-13-travel-planner-app/mobile', slug: 'travel-planner' },
-      { name: 'Charades!', emoji: '🎭', path: 'tasks/2026-04-18-charades-mobile-game/mobile', slug: 'charades-mobile-game' },
-      { name: 'Poker Calculator', emoji: '📱', path: 'tasks/2026-04-30-poker-calculator/mobile', slug: 'poker-calculator' },
+      { name: 'Home Visualizer',   emoji: '🏠', path: 'tasks/2026-03-27-architecture-project/mobile',       slug: 'home-visualizer',       easProjectId: '5f9a4d75-483e-4c9c-ad4a-82357a7a323a' },
+      { name: 'Birdsong ID',       emoji: '🐦', path: 'tasks/2026-04-01-bird-song-id-mvp/mobile',           slug: 'birdsong-id',           easProjectId: '60b2403f-d9ca-4ddc-a28a-ca26bdb0b56b' },
+      { name: 'Plant ID',          emoji: '🌿', path: 'tasks/2026-04-09-plant-identification-app/mobile',   slug: 'plant-id',              easProjectId: '9a25eba8-106d-4c61-b8ac-cfaeb4e7f164' },
+      { name: 'VehicleID',         emoji: '🚗', path: 'tasks/2026-04-09-vehicle-identification-app/mobile', slug: 'vehicle-id',            easProjectId: 'e8f6ee23-9808-44df-b739-2b20fd30e5bb' },
+      { name: 'Travel Planner',    emoji: '✈️', path: 'tasks/2026-04-13-travel-planner-app/mobile',         slug: 'travel-planner',        easProjectId: 'f5c10a41-366d-489b-890e-c32cc9bf2803' },
+      { name: 'Charades!',         emoji: '🎭', path: 'tasks/2026-04-18-charades-mobile-game/mobile',       slug: 'charades-mobile-game',  easProjectId: '64a919d8-9535-4c0c-b10e-1656bba05377' },
+      { name: 'Poker Calculator',  emoji: '🃏', path: 'tasks/2026-04-30-poker-calculator/mobile',           slug: 'poker-calculator',      easProjectId: '64a919d8-9535-4c0c-b10e-1656bba05377' },
     ];
     // AUTO-GENERATED-APPS-END
 
@@ -188,7 +387,12 @@
       githubToken = val;
       document.getElementById('expo-token-input').value = '';
       document.getElementById('expo-token-input').placeholder = '••••••••••••••';
-      document.getElementById('token-saved').classList.add('show');
+      const badge = document.getElementById('token-badge');
+      badge.textContent = 'saved ✓';
+      badge.classList.add('saved');
+      const body = document.getElementById('token-body');
+      body.classList.remove('open');
+      document.getElementById('token-arrow').textContent = '▼';
     }
 
     function setPipeline(p) {
@@ -198,7 +402,7 @@
       document.getElementById('token-bar').classList.toggle('show', p === 2);
       document.getElementById('subtitle').textContent = p === 1
         ? 'Open any app in GitHub Codespaces — scan the QR code in Expo Go'
-        : 'Trigger an EAS cloud build via GitHub Actions — get an installable app link (~10 min)';
+        : 'Trigger an EAS cloud build via GitHub Actions — get an installable IPA/APK (~10 min)';
       renderGrid();
     }
 
@@ -217,12 +421,12 @@
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
       a.innerHTML = `
-        <div class="emoji">${app.emoji}</div>
-        <div class="info">
-          <div class="name">${app.name}</div>
-          <div class="path">${app.path}</div>
+        <div class="card-emoji">${app.emoji}</div>
+        <div class="card-info">
+          <div class="card-name">${app.name}</div>
+          <div class="card-path">${app.path}</div>
         </div>
-        <div class="arrow">→</div>
+        <div class="card-arrow">→</div>
       `;
       grid.appendChild(a);
     }
@@ -233,10 +437,10 @@
       div.id = `card-${app.slug}`;
       div.innerHTML = `
         <div class="card-p2-top">
-          <div class="emoji">${app.emoji}</div>
-          <div class="info">
-            <div class="name">${app.name}</div>
-            <div class="path">${app.path}</div>
+          <div class="card-emoji">${app.emoji}</div>
+          <div class="card-info">
+            <div class="card-name">${app.name}</div>
+            <div class="card-path">${app.path}</div>
           </div>
         </div>
         <button class="build-btn" id="btn-${app.slug}" onclick="triggerBuild('${app.slug}')">
@@ -249,7 +453,7 @@
 
     async function triggerBuild(slug) {
       if (!githubToken) {
-        showStatus(slug, 'error', '⚠️ Save your GitHub token first (tap 🔑 GitHub Token above)');
+        showStatus(slug, 'error', '⚠️ Save your GitHub token first (expand 🔑 GitHub Token above)');
         return;
       }
       const app = APPS.find(a => a.slug === slug);
@@ -269,11 +473,11 @@
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          throw new Error(err.message || `GitHub API error ${res.status}`);
+          throw new Error(err.message || `GitHub API ${res.status}`);
         }
         showStatus(slug, 'building',
-          `<span class="spinner"></span> Workflow triggered — finding run…<br>
-           <small style="color:#8b949e">Checking every 15 s</small>`
+          `<span class="spinner"></span> Workflow triggered — locating run…<br>
+           <small style="color:var(--text-muted)">Polling every 15 s</small>`
         );
         pollForRun(slug, app, triggerTime, 0);
       } catch (err) {
@@ -301,9 +505,9 @@
         const run = data.workflow_runs?.find(r => new Date(r.created_at).getTime() >= sinceMs);
         if (run) {
           showStatus(slug, 'building',
-            `<span class="spinner"></span> Building… (Run #${run.run_number})<br>
+            `<span class="spinner"></span> Building… (Run #${run.run_number})
              <div class="progress-bar"><div class="progress-fill" id="prog-${slug}"></div></div>
-             <small style="color:#8b949e;display:block;margin-top:6px">~10 min — EAS Build running in CI</small>
+             <small style="color:var(--text-muted);display:block;margin-top:7px">~10 min · EAS cloud build</small>
              <a class="status-link" href="${run.html_url}" target="_blank">Watch on GitHub Actions →</a>`
           );
           pollRunStatus(slug, app, run.id, run.html_url, 0);
@@ -325,16 +529,18 @@
         if (run.status === 'completed') {
           document.getElementById(`btn-${slug}`).disabled = false;
           if (run.conclusion === 'success') {
-            const expoUrl = `https://expo.dev/projects/${app.easProjectId}/builds`;
+            const expoUrl = app.easProjectId
+              ? `https://expo.dev/projects/${app.easProjectId}/builds`
+              : `https://expo.dev/accounts/camputy/projects`;
             showStatus(slug, 'success',
               `✅ Build complete!<br>
                <a class="status-link" href="${expoUrl}" target="_blank">📥 Get install link on expo.dev →</a><br>
-               <a class="status-link" href="${runUrl}" target="_blank" style="font-size:12px;opacity:0.7">View run →</a>`
+               <a class="status-link" href="${runUrl}" target="_blank" style="font-size:11px;opacity:0.6">View run →</a>`
             );
           } else {
             showStatus(slug, 'error',
               `❌ Build ${run.conclusion}.<br>
-               <a class="status-link" href="${runUrl}" target="_blank">See details on GitHub →</a>`
+               <a class="status-link" href="${runUrl}" target="_blank">View details on GitHub →</a>`
             );
           }
         } else {
