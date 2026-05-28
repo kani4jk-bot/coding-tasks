@@ -41,8 +41,8 @@ on:
       - 'tasks/2026-04-09-plant-identification-app/mobile/**'
       - 'tasks/2026-04-09-vehicle-identification-app/mobile/**'
       - 'tasks/2026-04-13-travel-planner-app/mobile/**'
-      - 'tasks/2026-04-18-charades-mobile-game/**'
-      - 'tasks/2026-04-30-poker-calculator/**'
+      - 'tasks/2026-04-18-charades-mobile-game/mobile/**'
+      - 'tasks/2026-04-30-poker-calculator/mobile/**'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -83,6 +83,12 @@ jobs:
             done
           fi
 
+      - name: Validate app path
+        run: |
+          test -n "${{ steps.app.outputs.path }}"
+          test -f "${{ steps.app.outputs.path }}/package.json"
+          test -f "${{ steps.app.outputs.path }}/app.json"
+
       - name: Cache npm store
         uses: actions/cache@v4
         with:
@@ -92,7 +98,7 @@ jobs:
             ${{ runner.os }}-npm-${{ steps.app.outputs.path }}-
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
         working-directory: ${{ steps.app.outputs.path }}
 
       - name: Type check
