@@ -2,11 +2,13 @@ import re
 from datetime import datetime, timedelta
 from typing import Optional
 
+import anthropic
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
+from .config import settings
 from .database import create_db, get_session
 from .models import Segment, Trip
 from .parser import parse_email
@@ -149,7 +151,19 @@ def parse_email_endpoint(
     request: ParseEmailRequest,
     session: Session = Depends(get_session),
 ) -> dict:
-    segments_data = parse_email(request.email_text)
+    if not settings.anthropic_api_key:
+        raise HTTPException(
+            status_code=503,
+            detail="The server is missing an ANTHROPIC_API_KEY. Add one to backend/.env and restart.",
+        )
+
+    try:
+        segments_data = parse_email(request.email_text)
+    except anthropic.AuthenticationError:
+        raise HTTPException(
+            status_code=503,
+            detail="The configured ANTHROPIC_API_KEY is invalid. Check backend/.env and restart.",
+        )
 
     if not segments_data:
         return {
