@@ -6,7 +6,14 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, init);
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(text || `HTTP ${res.status}`);
+    let message = text;
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed?.detail) message = parsed.detail;
+    } catch {
+      // not JSON — use raw text
+    }
+    throw new Error(message || `HTTP ${res.status}`);
   }
   return res.json() as Promise<T>;
 }
