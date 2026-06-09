@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Cellar",
+    "slug": "cellar",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "scheme": "cellar",
+    "backgroundColor": "#17110F",
+    "ios": {
+      "bundleIdentifier": "com.kani4jk.cellar",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Cellar uses the camera to photograph wine labels.",
+        "NSPhotoLibraryUsageDescription": "Cellar lets you choose label photos from your library."
+      }
+    },
+    "android": {
+      "package": "com.kani4jk.cellar",
+      "permissions": ["CAMERA"]
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Cellar lets you choose label photos from your library.",
+          "cameraPermission": "Cellar uses the camera to photograph wine labels."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "64a919d8-9535-4c0c-b10e-1656bba05377"
+      }
+    }
+  }
+}
