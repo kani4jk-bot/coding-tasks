@@ -1,59 +1,77 @@
-# Cellar — wine tasting journal
+# Cellar - wine tasting journal
 
-Photograph a wine label, let Claude identify it (producer, vintage, grapes, region, how it's made, tasting profile), then rank it head-to-head against the wines you've already tasted. Each bottle earns a score out of ten that re-balances as your cellar grows. The Discover tab suggests new bottles and reads your palate.
+Photograph a wine label, identify the bottle, then rank it head-to-head against wines you have already tasted. Cellar stores the journal on-device and can export a portable backup.
 
-Native Expo app, built for the GitHub Codespaces + EAS pipeline. Lives at `tasks/2026-06-10-cellar/`.
-
-## 1. Install dependencies
+## App setup
 
 ```bash
 cd tasks/2026-06-10-cellar
 npm install
-npx expo install --fix   # aligns every package to your installed SDK
+cp .env.example .env
+npx expo start
 ```
 
-The versions in `package.json` target Expo SDK 54; `expo install --fix` reconciles them to whatever SDK you're on.
+Set `EXPO_PUBLIC_API_BASE` in `.env` to the deployed Worker URL. This URL is public by design; the Gemini API key remains only in the Worker secret.
 
-## 2. Set the Anthropic API key
-
-Label recognition and the Discover features call the Anthropic API. The key is read from `EXPO_PUBLIC_ANTHROPIC_API_KEY`.
-
-**Local dev** — copy `.env.example` to `.env` and paste your key, then `npx expo start`.
-
-**EAS builds** — set it as an EAS environment variable so it isn't committed:
+For EAS builds, add the same URL to each build environment:
 
 ```bash
-eas env:create --name EXPO_PUBLIC_ANTHROPIC_API_KEY --value sk-ant-... --environment preview --visibility sensitive
+eas env:create --name EXPO_PUBLIC_API_BASE --value https://cellar-api.<your-subdomain>.workers.dev --environment preview --visibility plaintext
+eas env:create --name EXPO_PUBLIC_API_BASE --value https://cellar-api.<your-subdomain>.workers.dev --environment production --visibility plaintext
 ```
 
-> Note: `EXPO_PUBLIC_` vars are inlined into the app bundle. That's fine for a personal build; for a published app you'd route the calls through a small proxy so the key isn't shipped to devices.
+## AI Worker
 
-## 3. Build
+The Worker can run within Cloudflare's free request allowance. It uses `gemini-3.1-flash-lite`, which currently has free text, image, and output tokens, subject to Google's quotas and data-use terms.
 
-The EAS project ID (`64a919d8-...`) is already set in `app.json`, so no `eas init` needed.
+1. Create a Gemini API key in Google AI Studio.
+2. Install and deploy the Worker:
 
 ```bash
-eas build --profile preview --platform android   # installable APK
-# or
+cd worker
+npm install
+npx wrangler login
+npx wrangler secret put GEMINI_API_KEY
+npm run deploy
+```
+
+The deployed Worker exposes:
+
+- `GET /api/health`
+- `POST /api/identify`
+- `POST /api/suggest`
+- `POST /api/palate`
+
+The endpoint is intentionally narrow and request-size limited. It is still a public endpoint, so monitor its free-tier usage before distributing the app broadly.
+
+## Builds
+
+Cellar is linked to its own EAS project:
+
+`3583d273-7049-47a3-bbd5-1acd8fc5d22b`
+
+```bash
+eas build --profile preview --platform android
 eas build --profile preview --platform ios
 ```
 
-If your flow assigns a fresh EAS project per app, run `eas init` first to relink. If EAS complains about the project owner, add `"owner": "<your-expo-username>"` to `app.json`.
+iOS uses the bundle identifier `com.kani4jk.cellar` and includes camera and photo-library permission descriptions. Backup export uses the native share sheet, including iCloud Drive and Files.
 
-## Notes
+## Data
 
-- Data is stored on-device with AsyncStorage (`cellar:wines`). Only compact label thumbnails are kept, not full-resolution photos.
-- Scoring splits 0–10 into thirds by first impression (Loved it / It was good / Not for me), and a short binary search places each wine precisely within its band.
-- Model is set in `src/api.js` (`claude-sonnet-4-20250514`) — swap it there if you want a different one.
+- Wine records and compact thumbnails are stored in AsyncStorage under `cellar:wines`.
+- Backup files are versioned JSON and include thumbnails, metadata, notes, rankings, and dates.
+- Restoring a backup replaces the current on-device cellar after confirmation.
+- Scores are recomputed whenever records are edited, restored, added, or removed.
 
 ## Layout
 
-```
-App.js            all screens (Cellar, Add flow, Discover, Detail, Nav)
-src/theme.js      palette, type, scoring
-src/storage.js    AsyncStorage load/save
-src/api.js        Anthropic calls (identify, suggest, palate)
-app.json          Expo config + EAS project ID + camera permissions
-eas.json          build profiles
-.devcontainer/    Codespaces setup
+```text
+App.js              screens and flows
+src/api.js          calls the Cellar Worker
+src/backup.js       native backup export and restore
+src/storage.js      AsyncStorage persistence
+src/theme.js        palette, wine types, scoring
+worker/             Cloudflare Worker and Gemini integration
+app.json            Expo, EAS, iOS, and Android configuration
 ```

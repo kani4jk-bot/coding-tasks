@@ -1,32 +1,47 @@
 import { useState, useEffect } from "react";
 import {
   View, Text, TextInput, ScrollView, TouchableOpacity, Image, Modal,
-  ActivityIndicator, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform,
+  ActivityIndicator, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Alert,
 } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import {
   Camera, Wine, Compass, X, ChevronRight, ArrowLeft, Trash2, Search,
-  Sparkles, MapPin, Grape, Check, Award, Images,
+  Sparkles, MapPin, Grape, Check, Award, Images, PencilLine, DatabaseBackup,
+  Download, Upload, Save,
 } from "lucide-react-native";
 
 import { C, serif, BANDS, SENT_ORDER, TYPES, TYPE_COLOR, recompute } from "./src/theme";
 import { loadIndex, saveIndex } from "./src/storage";
 import { identifyWine, suggestWines, readPalate } from "./src/api";
+import { exportCellar, pickCellarBackup } from "./src/backup";
 
 /* ---------- image pipeline ---------- */
 async function pickImage(fromCamera) {
   if (fromCamera) {
     const p = await ImagePicker.requestCameraPermissionsAsync();
-    if (!p.granted) return null;
+    if (!p.granted) {
+      Alert.alert("Camera access needed", "Allow camera access in Settings to photograph a wine label.");
+      return null;
+    }
     const r = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85 });
     return r.canceled ? null : r.assets[0].uri;
   }
   const p = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!p.granted) return null;
+  if (!p.granted) {
+    Alert.alert("Photo access needed", "Allow photo access in Settings to choose a wine label.");
+    return null;
+  }
   const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85 });
   return r.canceled ? null : r.assets[0].uri;
+}
+function blankDraft() {
+  return {
+    name: "", producer: "", vintage: "", type: "Red", grapes: [],
+    region: "", country: "", grapeOrigin: "", winemaking: "",
+    profile: "", thumb: null, notes: "",
+  };
 }
 async function processImage(uri) {
   const big = await ImageManipulator.manipulateAsync(uri, [{ resize: { width: 1100 } }], {
@@ -51,6 +66,7 @@ export default function App() {
   const [detail, setDetail] = useState(null);
   const [flow, setFlow] = useState(null);
   const [sourcePick, setSourcePick] = useState(false);
+  const [backupOpen, setBackupOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -94,9 +110,15 @@ export default function App() {
       console.warn(e);
       setFlow({
         step: "confirm", failed: true, recognized: false,
-        draft: { name: "", producer: "", vintage: "", type: "Red", grapes: [], region: "", country: "", grapeOrigin: "", winemaking: "", profile: "", thumb: null, notes: "" },
+        draft: blankDraft(),
       });
     }
+  };
+
+  const addManually = () => {
+    setSourcePick(false);
+    setTab("cellar");
+    setFlow({ step: "confirm", manual: true, draft: blankDraft() });
   };
 
   const finalize = async (draft, sentiment, lo) => {
@@ -111,12 +133,44 @@ export default function App() {
   };
 
   const sorted = [...wines].sort((a, b) => b.score - a.score);
+  const importBackup = async () => {
+    try {
+      const imported = await pickCellarBackup();
+      if (!imported) return;
+      Alert.alert(
+        "Restore this backup?",
+        `This will replace the ${wines.length} ${wines.length === 1 ? "wine" : "wines"} currently on this device with ${imported.length}.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Restore",
+            style: "destructive",
+            onPress: async () => {
+              await persist(imported);
+              setBackupOpen(false);
+              setTab("cellar");
+            },
+          },
+        ]
+      );
+    } catch (e) {
+      Alert.alert("Could not restore backup", e.message || "The selected file could not be read.");
+    }
+  };
+
+  const exportBackup = async () => {
+    try {
+      await exportCellar(wines);
+    } catch (e) {
+      Alert.alert("Could not export backup", e.message || "Please try again.");
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
       <StatusBar barStyle="light-content" />
       <View style={{ flex: 1, maxWidth: 560, width: "100%", alignSelf: "center" }}>
-        <Header />
+        <Header onBackup={() => setBackupOpen(true)} />
         {loading ? (
           <View style={{ flex: 1, justifyContent: "center" }}>
             <ActivityIndicator color={C.brass} size="large" />
@@ -129,6 +183,23 @@ export default function App() {
         <Nav tab={tab} setTab={setTab} onAdd={() => setSourcePick(true)} />
       </View>
 
+      <Modal visible={backupOpen} transparent animationType="fade" onRequestClose={() => setBackupOpen(false)}>
+        <TouchableOpacity activeOpacity={1} onPress={() => setBackupOpen(false)}
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 18, paddingBottom: 34, borderTopWidth: 1, borderColor: C.border }}>
+            <Text style={{ fontFamily: serif, fontSize: 20, color: C.text, marginBottom: 6, textAlign: "center" }}>Backup & restore</Text>
+            <Text style={{ color: C.muted, fontSize: 13.5, lineHeight: 20, textAlign: "center", marginBottom: 16 }}>
+              Save a portable copy to iCloud Drive, Files, Google Drive, or another location.
+            </Text>
+            <SheetBtn icon={<Upload size={20} color={C.brass} />} label={`Export ${wines.length} ${wines.length === 1 ? "wine" : "wines"}`} onPress={exportBackup} disabled={!wines.length} />
+            <SheetBtn icon={<Download size={20} color={C.brass} />} label="Restore from backup" onPress={importBackup} />
+            <TouchableOpacity onPress={() => setBackupOpen(false)} style={{ padding: 14, marginTop: 4 }}>
+              <Text style={{ color: C.muted, textAlign: "center", fontSize: 15 }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* source picker */}
       <Modal visible={sourcePick} transparent animationType="fade" onRequestClose={() => setSourcePick(false)}>
         <TouchableOpacity activeOpacity={1} onPress={() => setSourcePick(false)}
@@ -137,6 +208,7 @@ export default function App() {
             <Text style={{ fontFamily: serif, fontSize: 20, color: C.text, marginBottom: 16, textAlign: "center" }}>Add a wine</Text>
             <SheetBtn icon={<Camera size={20} color={C.brass} />} label="Take a photo" onPress={() => capture(true)} />
             <SheetBtn icon={<Images size={20} color={C.brass} />} label="Choose from library" onPress={() => capture(false)} />
+            <SheetBtn icon={<PencilLine size={20} color={C.brass} />} label="Enter details manually" onPress={addManually} />
             <TouchableOpacity onPress={() => setSourcePick(false)} style={{ padding: 14, marginTop: 4 }}>
               <Text style={{ color: C.muted, textAlign: "center", fontSize: 15 }}>Cancel</Text>
             </TouchableOpacity>
@@ -166,18 +238,25 @@ export default function App() {
   );
 }
 
-function Header() {
+function Header({ onBackup }) {
   return (
-    <View style={{ paddingHorizontal: 18, paddingTop: 14, paddingBottom: 12, flexDirection: "row", alignItems: "baseline", gap: 10 }}>
-      <Text style={{ fontFamily: serif, fontSize: 30, color: C.text, letterSpacing: 0.5 }}>Cellar</Text>
-      <Text style={{ fontSize: 12, color: C.faint, letterSpacing: 1.5 }}>TASTING JOURNAL</Text>
+    <View style={{ paddingHorizontal: 18, paddingTop: 14, paddingBottom: 12, flexDirection: "row", alignItems: "center" }}>
+      <View style={{ flex: 1, flexDirection: "row", alignItems: "baseline", gap: 10 }}>
+        <Text style={{ fontFamily: serif, fontSize: 30, color: C.text, letterSpacing: 0.5 }}>Cellar</Text>
+        <Text style={{ fontSize: 12, color: C.faint, letterSpacing: 1.5 }}>TASTING JOURNAL</Text>
+      </View>
+      <TouchableOpacity accessibilityRole="button" accessibilityLabel="Backup and restore" onPress={onBackup}
+        style={{ width: 42, height: 42, alignItems: "center", justifyContent: "center" }}>
+        <DatabaseBackup size={21} color={C.muted} />
+      </TouchableOpacity>
     </View>
   );
 }
 
-function SheetBtn({ icon, label, onPress }) {
+function SheetBtn({ icon, label, onPress, disabled }) {
   return (
-    <TouchableOpacity onPress={onPress} style={{ flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.surface2, borderRadius: 13, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: C.border }}>
+    <TouchableOpacity accessibilityRole="button" disabled={disabled} onPress={onPress}
+      style={{ flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.surface2, borderRadius: 13, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: C.border, opacity: disabled ? 0.45 : 1 }}>
       {icon}
       <Text style={{ color: C.text, fontSize: 16 }}>{label}</Text>
     </TouchableOpacity>
@@ -271,7 +350,7 @@ function Cellar({ wines, onOpen, onAdd }) {
       </View>
 
       {filtered.map((w) => (
-        <TouchableOpacity key={w.id} onPress={() => onOpen(w)}
+        <TouchableOpacity key={w.id} accessibilityRole="button" accessibilityLabel={`${w.name || "Unnamed wine"}, score ${w.score.toFixed(1)}`} onPress={() => onOpen(w)}
           style={{ flexDirection: "row", alignItems: "center", gap: 13, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 14, padding: 12, marginBottom: 11 }}>
           <Thumb wine={w} size={54} />
           <View style={{ flex: 1 }}>
@@ -299,19 +378,69 @@ function Cellar({ wines, onOpen, onAdd }) {
 
 /* ---------- detail ---------- */
 function Detail({ wine, onClose, onSave, onDelete }) {
-  const [notes, setNotes] = useState(wine.notes || "");
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(wine);
   const [confirmDel, setConfirmDel] = useState(false);
+  const set = (key, value) => setDraft((current) => ({ ...current, [key]: value }));
+  const save = async () => {
+    await onSave({
+      name: draft.name, producer: draft.producer, vintage: draft.vintage, type: draft.type,
+      grapes: draft.grapes, region: draft.region, country: draft.country,
+      grapeOrigin: draft.grapeOrigin, winemaking: draft.winemaking,
+      profile: draft.profile, notes: draft.notes,
+    });
+    setEditing(false);
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingVertical: 12 }}>
-        <TouchableOpacity onPress={onClose} style={{ padding: 6 }}><ArrowLeft size={22} color={C.text} /></TouchableOpacity>
-        <Text style={{ color: C.faint, fontSize: 12, letterSpacing: 1 }}>{(BANDS[wine.sentiment]?.label || "").toUpperCase()}</Text>
-        <TouchableOpacity onPress={() => setConfirmDel(true)} style={{ padding: 6 }}><Trash2 size={19} color={C.faint} /></TouchableOpacity>
+        <TouchableOpacity onPress={editing ? () => { setDraft(wine); setEditing(false); } : onClose} style={{ padding: 6 }}>
+          <ArrowLeft size={22} color={C.text} />
+        </TouchableOpacity>
+        <Text style={{ color: C.faint, fontSize: 12, letterSpacing: 1 }}>{editing ? "EDIT WINE" : (BANDS[wine.sentiment]?.label || "").toUpperCase()}</Text>
+        {editing ? (
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Save wine changes" onPress={save} style={{ padding: 6 }}>
+            <Save size={20} color={C.brass} />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Edit wine" onPress={() => { setDraft(wine); setEditing(true); }} style={{ padding: 6 }}>
+            <PencilLine size={20} color={C.text} />
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 18 }}>
+        {editing ? (
+          <>
+            <View style={{ alignItems: "center", marginBottom: 20 }}><Thumb wine={draft} size={92} /></View>
+            <Field label="Wine name" value={draft.name} onChange={(v) => set("name", v)} placeholder="Wine or cuvée name" />
+            <Field label="Producer" value={draft.producer} onChange={(v) => set("producer", v)} placeholder="Winery" />
+            <Field label="Vintage" value={draft.vintage} onChange={(v) => set("vintage", v)} placeholder="Year" keyboardType="number-pad" />
+            <Text style={txt.fieldLabel}>TYPE</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+              {TYPES.map((type) => (
+                <TouchableOpacity key={type} onPress={() => set("type", type)}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1, borderColor: draft.type === type ? C.brass : C.border }}>
+                  <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: TYPE_COLOR[type] }} />
+                  <Text style={{ color: draft.type === type ? C.text : C.muted }}>{type}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Field label="Grapes" value={(draft.grapes || []).join(", ")} onChange={(v) => set("grapes", v.split(",").map((x) => x.trim()).filter(Boolean))} placeholder="Comma separated" />
+            <Field label="Region" value={draft.region} onChange={(v) => set("region", v)} placeholder="Region" />
+            <Field label="Country" value={draft.country} onChange={(v) => set("country", v)} placeholder="Country" />
+            <Field label="Where the grapes come from" value={draft.grapeOrigin} onChange={(v) => set("grapeOrigin", v)} multiline />
+            <Field label="How it's made" value={draft.winemaking} onChange={(v) => set("winemaking", v)} multiline />
+            <Field label="Tasting profile" value={draft.profile} onChange={(v) => set("profile", v)} multiline />
+            <Field label="Your notes" value={draft.notes} onChange={(v) => set("notes", v)} placeholder="What did you taste? Where were you?" multiline />
+            <TouchableOpacity onPress={() => setConfirmDel(true)} style={[btn.ghost, { justifyContent: "center", marginTop: 8, borderColor: C.burgundyDim }]}>
+              <Trash2 size={17} color={C.burgundy} /><Text style={{ color: C.text }}>Remove this wine</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 18 }}>
           <Thumb wine={wine} size={92} />
           <View style={{ flex: 1 }}>
             <Text style={{ fontFamily: serif, fontSize: 23, color: C.text }}>{wine.name || "Unnamed wine"}</Text>
@@ -330,13 +459,10 @@ function Detail({ wine, onClose, onSave, onDelete }) {
         {!!wine.winemaking && <Section title="How it's made">{wine.winemaking}</Section>}
         {!!wine.profile && <Section title="Tasting profile">{wine.profile}</Section>}
 
-        <Text style={txt.sectionTitle}>YOUR NOTES</Text>
-        <TextInput
-          value={notes} onChangeText={setNotes} onBlur={() => onSave({ notes })} multiline
-          placeholder="What did you taste? Where were you?" placeholderTextColor={C.faint}
-          style={{ minHeight: 84, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 12, color: C.text, fontSize: 15, padding: 12, textAlignVertical: "top", lineHeight: 22 }}
-        />
+        {!!wine.notes && <Section title="Your notes">{wine.notes}</Section>}
         <Text style={{ color: C.faint, fontSize: 12.5, marginTop: 16 }}>Tasted {fmtDate(wine.createdAt)}</Text>
+          </>
+        )}
       </ScrollView>
 
       {confirmDel && (
@@ -412,6 +538,7 @@ function Confirm({ flow, setFlow, onCancel }) {
         <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
           {flow.failed && <Notice>The label couldn't be read automatically. Enter the details by hand — everything else still works.</Notice>}
           {flow.recognized && <Notice good>Identified from the label. Adjust anything that looks off.</Notice>}
+          {flow.manual && <Notice>Enter what you know now. You can leave optional details blank.</Notice>}
           <View style={{ flexDirection: "row", alignItems: "center", gap: 14, marginTop: 8, marginBottom: 18 }}>
             <Thumb wine={d} size={70} />
             <Text style={{ color: C.muted, fontSize: 13.5, flex: 1, lineHeight: 20 }}>Tap any field to edit before scoring.</Text>
@@ -611,8 +738,8 @@ function Discover({ wines }) {
         <View style={{ marginBottom: 18 }}>
           <Text style={txt.sectionTitle}>YOU KEEP RETURNING TO</Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {s.grapes.map((g) => <Pill key={g} icon={<Grape size={12} color={C.muted} />}>{g}</Pill>)}
-            {s.regions.map((r) => <Pill key={r} icon={<MapPin size={12} color={C.muted} />}>{r}</Pill>)}
+            {s.grapes.map((g) => <Pill key={`grape-${g}`} icon={<Grape size={12} color={C.muted} />}>{g}</Pill>)}
+            {s.regions.map((r) => <Pill key={`region-${r}`} icon={<MapPin size={12} color={C.muted} />}>{r}</Pill>)}
           </View>
         </View>
       )}
@@ -692,7 +819,7 @@ function Nav({ tab, setTab, onAdd }) {
   return (
     <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, flexDirection: "row", alignItems: "center", backgroundColor: C.bg, borderTopWidth: 1, borderColor: C.border, paddingHorizontal: 18, paddingTop: 8, paddingBottom: 26 }}>
       {item("cellar", Wine, "Cellar")}
-      <TouchableOpacity onPress={onAdd}
+      <TouchableOpacity accessibilityRole="button" accessibilityLabel="Add a wine" onPress={onAdd}
         style={{ width: 58, height: 58, borderRadius: 29, backgroundColor: C.burgundy, alignItems: "center", justifyContent: "center", marginHorizontal: 8, marginTop: -18, shadowColor: C.burgundy, shadowOpacity: 0.5, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }}>
         <Camera size={26} color="#fff" />
       </TouchableOpacity>
@@ -702,13 +829,13 @@ function Nav({ tab, setTab, onAdd }) {
 }
 
 /* ---------- small bits ---------- */
-function Field({ label, value, onChange, placeholder, keyboardType }) {
+function Field({ label, value, onChange, placeholder, keyboardType, multiline }) {
   return (
     <View style={{ marginBottom: 14 }}>
       <Text style={txt.fieldLabel}>{label.toUpperCase()}</Text>
       <TextInput value={value} onChangeText={onChange} placeholder={placeholder} placeholderTextColor={C.faint}
-        keyboardType={keyboardType || "default"}
-        style={{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 11, color: C.text, fontSize: 15.5, paddingHorizontal: 13, paddingVertical: 12 }} />
+        keyboardType={keyboardType || "default"} multiline={multiline} textAlignVertical={multiline ? "top" : "center"}
+        style={{ minHeight: multiline ? 88 : undefined, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 11, color: C.text, fontSize: 15.5, paddingHorizontal: 13, paddingVertical: 12 }} />
     </View>
   );
 }

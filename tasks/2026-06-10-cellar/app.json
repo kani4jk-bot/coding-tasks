@@ -7,6 +7,12 @@
     "userInterfaceStyle": "dark",
     "scheme": "cellar",
     "backgroundColor": "#17110F",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "checkAutomatically": "ON_LOAD"
+    },
     "ios": {
       "bundleIdentifier": "com.kani4jk.cellar",
       "supportsTablet": true,
@@ -17,7 +23,12 @@
     },
     "android": {
       "package": "com.kani4jk.cellar",
-      "permissions": ["CAMERA"]
+      "permissions": [
+        "android.permission.CAMERA"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
       [
@@ -30,8 +41,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "64a919d8-9535-4c0c-b10e-1656bba05377"
+        "projectId": "3583d273-7049-47a3-bbd5-1acd8fc5d22b"
       }
-    }
+    },
+    "owner": "camputy"
   }
 }
